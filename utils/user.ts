@@ -7,7 +7,7 @@ async function createUser(itsc: string, name: string): Promise<any> {
       headers: {
         "X-Hasura-Admin-Secret": process.env.HASURA_GRAPHQL_ADMIN_SECRET,
       },
-      url: `https://${process.env.API_URL}/v1/graphql`,
+      url: `http://${process.env.API_URL}/v1/graphql`,
       data: {
         query: `
           mutation createUserIfNotExist($itsc:String!, $name:String!) {
@@ -40,7 +40,7 @@ export async function getUserData(itsc: string, name: string): Promise<any> {
       headers: {
         "X-Hasura-Admin-Secret": process.env.HASURA_GRAPHQL_ADMIN_SECRET,
       },
-      url: `https://${process.env.API_URL}/v1/graphql`,
+      url: `http://${process.env.API_URL}/v1/graphql`,
       data: {
         query: `
             query getUserData($itsc: String!) {

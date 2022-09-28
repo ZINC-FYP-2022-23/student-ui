@@ -5,12 +5,12 @@ import { WebSocketLink } from "@apollo/client/link/ws";
 
 let apolloClient;
 const isBrowser = typeof window !== "undefined";
-const endpoint = "api.zinc.cse.ust.hk/v1/graphql";
+const endpoint = "localhost:8080/v1/graphql";
 // const endpoint = 'api.oap.ust.dev/v1/graphql';
 
 function createApolloClient(cookie: string) {
   const httpLink = new HttpLink({
-    uri: `https://${endpoint}`, // Server URL (must be absolute)
+    uri: `http://${endpoint}`, // Server URL (must be absolute)
     credentials: "include", // Additional fetch() options like `credentials` or `headers`
     headers: {
       cookie,
@@ -18,7 +18,7 @@ function createApolloClient(cookie: string) {
   });
   const wsLink = isBrowser
     ? new WebSocketLink({
-        uri: `wss://${endpoint}`,
+        uri: `ws://${endpoint}`,
         options: {
           lazy: true,
           reconnect: true,

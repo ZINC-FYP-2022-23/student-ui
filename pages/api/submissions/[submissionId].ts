@@ -10,7 +10,7 @@ export default async function (req, res) {
       headers: {
         cookie: req.headers.cookie,
       },
-      url: `https://${process.env.API_URL}/v1/graphql`,
+      url: `http://${process.env.API_URL}/v1/graphql`,
       data: {
         query: `
           query getSubmission($id: bigint!) {
