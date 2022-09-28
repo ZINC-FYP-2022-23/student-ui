@@ -4,6 +4,7 @@ ENV PORT 3000
 WORKDIR /usr/src/app
 
 # Installing dependencies
+RUN npm install --global --unsafe-perm ts-node
 COPY package.json yarn.lock .npmrc ./
 RUN yarn install
 
