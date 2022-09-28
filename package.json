@@ -6,7 +6,8 @@
     "dev": "NODE_ENV=development ts-node --project tsconfig.server.json server/index.ts",
     "build": "next build && tsc --project tsconfig.server.json",
     "start": "NODE_ENV=production node dist/server/index.js",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@apollo/client": "^3.4.17",
@@ -63,10 +64,22 @@
     "@types/react": "^16.9.46",
     "@types/react-transition-group": "^4.4.0",
     "@types/redis": "^2.8.26",
+    "husky": "^8.0.1",
+    "lint-staged": "^13.0.3",
     "postcss-preset-env": "^6.7.0",
     "prettier": "^2.7.1",
     "tailwindcss": "^2.2.19",
     "ts-node": "^8.10.2",
     "typescript": "^4.5.5"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,css}": [
+      "prettier --write"
+    ]
   }
 }
