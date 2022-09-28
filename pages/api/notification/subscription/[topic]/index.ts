@@ -1,32 +1,32 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 
-export default async function (req:  NextApiRequest, res: NextApiResponse) { 
+export default async function (req: NextApiRequest, res: NextApiResponse) {
   try {
-    console.log("inside API")
+    console.log("inside API");
     const { topic } = req.query;
-    console.log("body content")
-    console.log(JSON.parse(req.body))
+    console.log("body content");
+    console.log(JSON.parse(req.body));
 
     const response = await axios({
-      method: 'post',
+      method: "post",
       url: `http://webhook/trigger/notifications/subscribe/${topic}`,
-      data: JSON.parse(req.body)
+      data: JSON.parse(req.body),
     });
-    console.log(response)
+    console.log(response);
     res.json({
-      status: 'success'
+      status: "success",
     });
   } catch (error: any) {
     return res.status(500).json({
-      status: 'error',
-      error: error.message
+      status: "error",
+      error: error.message,
     });
   }
 }
 
 export const config = {
   api: {
-    externalResolver: true
-  }
-}
+    externalResolver: true,
+  },
+};

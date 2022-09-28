@@ -8,70 +8,67 @@ import { Logo } from "../Assets";
 import { useLayoutDispatch } from "../../contexts/layout";
 
 function Navigation({ items }) {
-
-  const defaultClassNames = 'group flex items-center px-2 py-2 text-base leading-5 font-medium rounded-md  focus:outline-none transition ease-in-out duration-150'
-  const activeClassNames = 'text-gray-900 bg-gray-100 hover:text-gray-900 hover:bg-gray-100 focus:bg-gray-200'
-  const inactiveClassNames = 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 focus:bg-gray-50'
+  const defaultClassNames =
+    "group flex items-center px-2 py-2 text-base leading-5 font-medium rounded-md  focus:outline-none transition ease-in-out duration-150";
+  const activeClassNames = "text-gray-900 bg-gray-100 hover:text-gray-900 hover:bg-gray-100 focus:bg-gray-200";
+  const inactiveClassNames = "text-gray-600 hover:text-gray-900 hover:bg-gray-50 focus:bg-gray-50";
   const router = useRouter();
 
   return (
     <div className="space-y-1">
-      {
-        items.map(item => (
-          <Link href={item.href} key={item.title}>
-            <a className={`${defaultClassNames} ${router.pathname===item.href?activeClassNames:inactiveClassNames}`}>
-              <span className="w-12 flex justify-center">
-                <FontAwesomeIcon icon={["fad", item.icon]} size="lg"/>
-              </span>
-              { item.title }
-            </a>
-          </Link>
-        ))
-      }
+      {items.map((item) => (
+        <Link href={item.href} key={item.title}>
+          <a
+            className={`${defaultClassNames} ${router.pathname === item.href ? activeClassNames : inactiveClassNames}`}
+          >
+            <span className="w-12 flex justify-center">
+              <FontAwesomeIcon icon={["fad", item.icon]} size="lg" />
+            </span>
+            {item.title}
+          </a>
+        </Link>
+      ))}
     </div>
-  )
+  );
 }
 
 function CourseList() {
-  
   const router = useRouter();
-  const { loading, data, error } = useQuery(GET_STUDYING_COURSES)
+  const { loading, data, error } = useQuery(GET_STUDYING_COURSES);
 
   return (
     <div className="mt-1 space-y-1" role="group" aria-labelledby="teams-headline">
-      {
-        data.semester.courses.map(course => (
-          <Link href={`/courses/[courseId]`} as={`/courses/${course.id}`} key={course.id}>
-            <a className="group flex items-center px-3 py-2 text-base leading-5 font-medium text-gray-600 rounded-md hover:text-gray-900 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition ease-in-out duration-150">
-              <span className="w-2.5 h-2.5 mr-4 bg-indigo-500 rounded-full"></span>
-              <span className="truncate">
-                { course.code }
-              </span>
-            </a>
-          </Link>
-        ))
-      }
+      {data.semester.courses.map((course) => (
+        <Link href={`/courses/[courseId]`} as={`/courses/${course.id}`} key={course.id}>
+          <a className="group flex items-center px-3 py-2 text-base leading-5 font-medium text-gray-600 rounded-md hover:text-gray-900 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition ease-in-out duration-150">
+            <span className="w-2.5 h-2.5 mr-4 bg-indigo-500 rounded-full"></span>
+            <span className="truncate">{course.code}</span>
+          </a>
+        </Link>
+      ))}
     </div>
-  )
+  );
 }
 
-export function MobileMenuToggle () {
-
-  const dispatch = useLayoutDispatch()
+export function MobileMenuToggle() {
+  const dispatch = useLayoutDispatch();
 
   return (
     <div className="md:hidden">
-      <button type="button" onClick={() => dispatch({ type: 'toggleMobileMenu' })} className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
+      <button
+        type="button"
+        onClick={() => dispatch({ type: "toggleMobileMenu" })}
+        className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out"
+      >
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
     </div>
-  )
+  );
 }
 
 export function Mobile() {
-
   const dispatch = useLayoutDispatch();
 
   return (
@@ -81,13 +78,14 @@ export function Mobile() {
           <div className="pt-5 pb-6 px-5 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <Logo/>
+                <Logo />
               </div>
               <div className="-mr-2">
                 <button
-                  onClick={() => dispatch({ type: 'toggleMobileMenu' })}
+                  onClick={() => dispatch({ type: "toggleMobileMenu" })}
                   type="button"
-                  className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
+                  className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out"
+                >
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -97,13 +95,14 @@ export function Mobile() {
             <div>
               <nav className="grid row-gap-8">
                 <Link href="/assignments">
-                  <a href="#" className="-m-3 p-3 flex items-center space-x-3 rounded-md hover:bg-gray-50 transition ease-in-out duration-150">
+                  <a
+                    href="#"
+                    className="-m-3 p-3 flex items-center space-x-3 rounded-md hover:bg-gray-50 transition ease-in-out duration-150"
+                  >
                     <span className="w-8 mr-2 flex justify-center">
-                      <FontAwesomeIcon className="text-cse-600" icon={["fad", 'laptop-code']} size="lg"/>
+                      <FontAwesomeIcon className="text-cse-600" icon={["fad", "laptop-code"]} size="lg" />
                     </span>
-                    <div className="text-base leading-6 font-medium text-gray-900">
-                      Assignments
-                    </div>
+                    <div className="text-base leading-6 font-medium text-gray-900">Assignments</div>
                   </a>
                 </Link>
                 {/* <Link href="/archives">
@@ -131,34 +130,61 @@ export function Mobile() {
           </div>
           <div className="py-6 px-5 space-y-6">
             <div className="grid grid-cols-2 row-gap-4 col-gap-8">
-              <a href="#" className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150">
+              <a
+                href="#"
+                className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150"
+              >
                 Pricing
               </a>
-              <a href="#" className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150">
+              <a
+                href="#"
+                className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150"
+              >
                 Docs
               </a>
-              <a href="#" className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150">
+              <a
+                href="#"
+                className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150"
+              >
                 Enterprise
               </a>
-              <a href="#" className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150">
+              <a
+                href="#"
+                className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150"
+              >
                 Blog
               </a>
-              <a href="#" className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150">
+              <a
+                href="#"
+                className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150"
+              >
                 Help Center
               </a>
-              <a href="#" className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150">
+              <a
+                href="#"
+                className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150"
+              >
                 Guides
               </a>
-              <a href="#" className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150">
+              <a
+                href="#"
+                className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150"
+              >
                 Security
               </a>
-              <a href="#" className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150">
+              <a
+                href="#"
+                className="text-base leading-6 font-medium text-gray-900 hover:text-gray-700 transition ease-in-out duration-150"
+              >
                 Events
               </a>
             </div>
             <div className="space-y-6">
               <span className="w-full flex rounded-md shadow-sm">
-                <a href="#" className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-base leading-6 font-medium rounded-md text-white bg-cse-600 hover:bg-cse-500 focus:outline-none focus:border-cse-700 focus:shadow-outline-indigo active:bg-cse-700 transition ease-in-out duration-150">
+                <a
+                  href="#"
+                  className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-base leading-6 font-medium rounded-md text-white bg-cse-600 hover:bg-cse-500 focus:outline-none focus:border-cse-700 focus:shadow-outline-indigo active:bg-cse-700 transition ease-in-out duration-150"
+                >
                   Sign up
                 </a>
               </span>
@@ -173,7 +199,7 @@ export function Mobile() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default Mobile;

@@ -14,102 +14,130 @@ import { SubmissionLoader } from "../SubmissionLoader";
 // import { UPDATE_SUBMISSION_NOTI } from "../../graphql/mutations/user";
 
 function AssignmentSubmission({ submissionClosed, configId, isOpen }) {
-  const { user ,submitFile } = useZinc();
+  const { user, submitFile } = useZinc();
   // const [updateSubmissionNoti] = useMutation(UPDATE_SUBMISSION_NOTI)
   const dispatch = useLayoutDispatch();
-  const onDrop = useCallback(files => {
-    if(files.length===0) {
-      dispatch({ type: 'showNotification', payload: { title: 'Invalid file type', message: 'Your submission contains file that are not supported, please try again', success: false } });
-    } else {
-      submitFile(files).then(async ({status}: any) => {
-        if(status==='success') {
-          // start 
-          // console.log(id)
-          //add data in database
-          // const notiConfigUpdateResult = await updateSubmissionNoti({
-          //   variables: {
-          //     userId: user,
-          //     submissionId: id,
-          //     submissionIdForCheck: id
-          //   }
-          // })
-          // console.log(notiConfigUpdateResult)
-          // subscribe to topic (s-userid-submissionId)
-          // get registrationToken of recevier
-          // const notiRes = await fetch(`/api/notification/getNotification?&id=${user}`,{
-          //   method: 'GET'
-          // });
-          // const noti = await notiRes.json()
-          // const token = noti.notification
+  const onDrop = useCallback(
+    (files) => {
+      if (files.length === 0) {
+        dispatch({
+          type: "showNotification",
+          payload: {
+            title: "Invalid file type",
+            message: "Your submission contains file that are not supported, please try again",
+            success: false,
+          },
+        });
+      } else {
+        submitFile(files)
+          .then(async ({ status }: any) => {
+            if (status === "success") {
+              // start
+              // console.log(id)
+              //add data in database
+              // const notiConfigUpdateResult = await updateSubmissionNoti({
+              //   variables: {
+              //     userId: user,
+              //     submissionId: id,
+              //     submissionIdForCheck: id
+              //   }
+              // })
+              // console.log(notiConfigUpdateResult)
+              // subscribe to topic (s-userid-submissionId)
+              // get registrationToken of recevier
+              // const notiRes = await fetch(`/api/notification/getNotification?&id=${user}`,{
+              //   method: 'GET'
+              // });
+              // const noti = await notiRes.json()
+              // const token = noti.notification
 
-          // const response = await fetch(`/api/notification/subscription/${'s'+user.toString()+'-'+id.toString()}`,{
-          //   method: 'POST',
-          //   body: JSON.stringify({
-          //     registrationToken: token,
-          //     userId: id
-          //   })
-          // })
-          // end
+              // const response = await fetch(`/api/notification/subscription/${'s'+user.toString()+'-'+id.toString()}`,{
+              //   method: 'POST',
+              //   body: JSON.stringify({
+              //     registrationToken: token,
+              //     userId: id
+              //   })
+              // })
+              // end
 
-          // if success
-          dispatch({ type: 'showNotification', payload: { title: 'Submission upload completed', message: 'Your work has been submitted successfully.', success: true } });
-        }
-      }).catch(error => {
-        dispatch({ type: 'showNotification', payload: { title: 'Submission failed', message: error.message, success: false } });
-      })
-    }
-  }, [configId])
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: '.h,.cpp,.rar,.zip,application/octet-stream,application/zip,application/x-zip,application/x-zip-compressed' });
-
+              // if success
+              dispatch({
+                type: "showNotification",
+                payload: {
+                  title: "Submission upload completed",
+                  message: "Your work has been submitted successfully.",
+                  success: true,
+                },
+              });
+            }
+          })
+          .catch((error) => {
+            dispatch({
+              type: "showNotification",
+              payload: { title: "Submission failed", message: error.message, success: false },
+            });
+          });
+      }
+    },
+    [configId],
+  );
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: ".h,.cpp,.rar,.zip,application/octet-stream,application/zip,application/x-zip,application/x-zip-compressed",
+  });
 
   if (submissionClosed) {
     return (
       <div className="rounded-lg bg-gray-200 w-full py-4 flex flex-col items-center justify-center">
-        <FontAwesomeIcon className="text-gray-500" icon={['fad', 'calendar-exclamation']} size="3x"/>
+        <FontAwesomeIcon className="text-gray-500" icon={["fad", "calendar-exclamation"]} size="3x" />
         <h4 className="mt-4 font-medium text-gray-500">Submission Deadline has passed</h4>
         <p className="text-sm text-gray-400">No new submission is allowed after the submission deadline is due</p>
       </div>
-    )
-  }
-  else if (!isOpen) {
+    );
+  } else if (!isOpen) {
     return (
       <div className="rounded-lg bg-gray-200 w-full py-4 flex flex-col items-center justify-center">
-        <FontAwesomeIcon className="text-gray-500" icon={['fad', 'calendar-exclamation']} size="3x"/>
+        <FontAwesomeIcon className="text-gray-500" icon={["fad", "calendar-exclamation"]} size="3x" />
         <h4 className="mt-4 font-medium text-gray-500">Submission not available</h4>
-        <p className="text-sm text-gray-400">Your instructor has not made this assignment available for submission yet</p>
+        <p className="text-sm text-gray-400">
+          Your instructor has not made this assignment available for submission yet
+        </p>
       </div>
-    )
+    );
   } else {
     return (
-      <div {...getRootProps()} className={`mt-2 flex justify-center px-6 pt-5 pb-6 border-2 focus:outline-none w-full ${isDragActive?'border-blue-400':'border-gray-300'} border-dashed rounded-md`}>
+      <div
+        {...getRootProps()}
+        className={`mt-2 flex justify-center px-6 pt-5 pb-6 border-2 focus:outline-none w-full ${
+          isDragActive ? "border-blue-400" : "border-gray-300"
+        } border-dashed rounded-md`}
+      >
         <div className="text-center">
-        <FontAwesomeIcon icon={['fad', 'upload']} size="2x" />
+          <FontAwesomeIcon icon={["fad", "upload"]} size="2x" />
           <p className="mt-1 text-sm text-gray-600">
-            <input {...getInputProps()}/>
+            <input {...getInputProps()} />
             <button className="mr-1 font-medium text-cse-600 hover:text-cse-500 focus:outline-none focus:underline transition duration-150 ease-in-out">
               Upload a file
             </button>
             or drag and drop
           </p>
-          <p className="mt-1 text-xs text-gray-500">
-            ZIP file up to 10MB
-          </p>
+          <p className="mt-1 text-xs text-gray-500">ZIP file up to 10MB</p>
         </div>
       </div>
-    )
+    );
   }
 }
 
 export function AssignmentContent({ content }) {
   const assignmentCreatedDate = new Date(content.createdAt);
-  assignmentCreatedDate.setTime(assignmentCreatedDate.getTime()+8*60*60*1000);
+  assignmentCreatedDate.setTime(assignmentCreatedDate.getTime() + 8 * 60 * 60 * 1000);
   const { user } = useZinc();
-  const { data, error ,loading } = useSubscription(SUBMISSION_SUBSCRIPTION, {
+  const { data, error, loading } = useSubscription(SUBMISSION_SUBSCRIPTION, {
     variables: {
       userId: user,
-      assignmentConfigId: content.id
-    }
-  })
+      assignmentConfigId: content.id,
+    },
+  });
   // console.log(error)
   return (
     <div className="flex-1 overflow-y-auto">
@@ -164,27 +192,18 @@ export function AssignmentContent({ content }) {
                 <span className="text-gray-400 text-sm">Released on {assignmentCreatedDate.toDateString()}</span>
               </div>
               <div className="mt-4 w-full">
-                <SubmissionCollectionStatus
-                  closed={content.submissionWindowPassed}
-                  dueAt={content.dueAt}
-                />
+                <SubmissionCollectionStatus closed={content.submissionWindowPassed} dueAt={content.dueAt} />
               </div>
-              <p className="my-4 leading-4">
-                { content.assignment.description }
-              </p>
+              <p className="my-4 leading-4">{content.assignment.description}</p>
               <AssignmentSubmission
                 configId={content.id}
                 submissionClosed={content.submissionWindowPassed}
                 isOpen={content.openForSubmission}
-                />
+              />
             </div>
           </li>
-          { loading && <SubmissionLoader/> }
-          {
-            !loading && data.submissions.map(submission => (
-              <Submission key={submission.id} submission={submission} />
-            ))
-          }
+          {loading && <SubmissionLoader />}
+          {!loading && data.submissions.map((submission) => <Submission key={submission.id} submission={submission} />)}
         </ul>
       </div>
     </div>

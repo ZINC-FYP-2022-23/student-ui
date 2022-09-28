@@ -4,48 +4,54 @@ import { Report } from "./Report/index";
 
 export function Submission({ submission }) {
   const now = new Date();
-  
+
   const submittedDate = new Date(submission.created_at);
-  submittedDate.setTime(submittedDate.getTime()+8*60*60*1000);
+  submittedDate.setTime(submittedDate.getTime() + 8 * 60 * 60 * 1000);
   return (
-    <li >
+    <li>
       <ul>
-        {
-          submission.reports.map(report => (
-            <Report key={report.id} report={report}/>
-          ))
-        }
+        {submission.reports.map((report) => (
+          <Report key={report.id} report={report} />
+        ))}
       </ul>
-      {
-        (submission.fail_reason || submission.extracted_path === null) && (
-          <>
-            <div className="mx-12 h-12 border-l-2"></div>
-            <div className="mx-8 flex justify-between">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-red-500 rounded-full flex justify-center items-center">
-                  <FontAwesomeIcon className="text-white" icon={['fad', 'file-archive']}/>
-                </div>
-                <p className="ml-2 text-sm text-gray-600 flex flex-col">
-                  Error occurred during decompression for the submitted archive
-                  <span className="text-xs font-medium">Reason: {
-                    submission.fail_reason??'Possible data corruption detected, decompressor failed to process the archive'
-                  }</span>
-                </p>
+      {(submission.fail_reason || submission.extracted_path === null) && (
+        <>
+          <div className="mx-12 h-12 border-l-2"></div>
+          <div className="mx-8 flex justify-between">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-red-500 rounded-full flex justify-center items-center">
+                <FontAwesomeIcon className="text-white" icon={["fad", "file-archive"]} />
               </div>
+              <p className="ml-2 text-sm text-gray-600 flex flex-col">
+                Error occurred during decompression for the submitted archive
+                <span className="text-xs font-medium">
+                  Reason:{" "}
+                  {submission.fail_reason ??
+                    "Possible data corruption detected, decompressor failed to process the archive"}
+                </span>
+              </p>
             </div>
-          </>
-        )
-      }
+          </div>
+        </>
+      )}
       <div className="mx-12 h-12 border-l-2"></div>
       <div className="mx-8 flex justify-between">
         <div className="flex items-center">
-          <div className="w-8 h-8 bg-gray-300 rounded-full flex justify-center items-center" data-flow="up" aria-label={`#${submission.id}`}>
-            <FontAwesomeIcon icon={['fad', 'folder-upload']}/>
+          <div
+            className="w-8 h-8 bg-gray-300 rounded-full flex justify-center items-center"
+            data-flow="up"
+            aria-label={`#${submission.id}`}
+          >
+            <FontAwesomeIcon icon={["fad", "folder-upload"]} />
           </div>
           <p className="ml-2 text-sm text-gray-600">
-            You submitted on 
+            You submitted on
             <span className="ml-1">
-              { `${submittedDate.toLocaleDateString('en-HK',{ month: 'short', day: 'numeric', ...(submittedDate.getFullYear()!==now.getFullYear()&&{ year: 'numeric' }) })} at ${submittedDate.toLocaleTimeString().toLowerCase()}` }
+              {`${submittedDate.toLocaleDateString("en-HK", {
+                month: "short",
+                day: "numeric",
+                ...(submittedDate.getFullYear() !== now.getFullYear() && { year: "numeric" }),
+              })} at ${submittedDate.toLocaleTimeString().toLowerCase()}`}
             </span>
           </p>
         </div>
@@ -58,5 +64,5 @@ export function Submission({ submission }) {
         </span>
       </div>
     </li>
-  )
+  );
 }

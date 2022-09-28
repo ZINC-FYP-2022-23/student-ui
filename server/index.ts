@@ -4,9 +4,9 @@ import next from "next";
 import oauth from "./oauth";
 import { loadEnvConfig } from "@next/env";
 
-declare module "express" { 
+declare module "express" {
   export interface Response {
-    openid?: any
+    openid?: any;
   }
 }
 
@@ -21,11 +21,11 @@ const port = process.env.PORT || 3000;
   try {
     await app.prepare();
     const server = express();
-    server.enable('trust proxy');
+    server.enable("trust proxy");
     server.use(cors());
     server.use(oauth);
 
-    server.get('/logout', (req: Request, res: Response) => {
+    server.get("/logout", (req: Request, res: Response) => {
       // @ts-ignore
       req.appSession!.destroy((err) => {
         if (err) {
@@ -34,7 +34,6 @@ const port = process.env.PORT || 3000;
         res.oidc!.logout({ returnTo: process.env.POST_LOGOUT_REDIRECT_URI });
       });
       res.oidc!.logout({ returnTo: process.env.POST_LOGOUT_REDIRECT_URI });
-
     });
     // server.get('/service-worker.js', (req, res) => {
     //   app.serveStatic(req, res, './.next/service-worker.js')
@@ -56,7 +55,7 @@ const port = process.env.PORT || 3000;
     //   })
     // });
 
-    server.all('*', (req: Request, res: Response) => handle(req, res));
+    server.all("*", (req: Request, res: Response) => handle(req, res));
     server.listen(port, (err?: any) => {
       if (err) throw err;
       console.log(`> Ready on localhost:${port} - env ${process.env.NODE_ENV}`);

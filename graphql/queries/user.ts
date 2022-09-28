@@ -1,9 +1,9 @@
 import { gql } from "@apollo/client";
 
 export interface User {
-  id: number
-  itsc: string
-  name: string
+  id: number;
+  itsc: string;
+  name: string;
 }
 
 export const SIDEBAR = gql`
@@ -13,11 +13,7 @@ export const SIDEBAR = gql`
       itsc
       name
       initials
-      courses(where: {
-        course: {
-          semester_id: { _eq: $semesterId }
-        }
-      }) {
+      courses(where: { course: { semester_id: { _eq: $semesterId } } }) {
         role
         course {
           id
@@ -30,16 +26,12 @@ export const SIDEBAR = gql`
       name
     }
   }
-`
+`;
 
 export const GET_STUDYING_COURSES = gql`
   query getStudyingCourses($userId: bigint!, $semesterId: bigint!) {
     user(id: $userId) {
-      courses(where: {
-        course: {
-          semester_id: { _eq: $semesterId }
-        }
-      }) {
+      courses(where: { course: { semester_id: { _eq: $semesterId } } }) {
         course {
           name
           code
@@ -47,15 +39,13 @@ export const GET_STUDYING_COURSES = gql`
       }
     }
   }
-`
+`;
 
 export const GET_GRADES = gql`
   query getGrades($userId: bigint!, $courseIds: [bigint!]!) {
     courses
   }
-`
-
-
+`;
 
 export const GET_SEMESTERS = gql`
   query getSemester {
@@ -64,7 +54,7 @@ export const GET_SEMESTERS = gql`
       name
     }
   }
-`
+`;
 
 export const GET_REPORT = gql`
   query getReport($id: bigint!) {
@@ -79,59 +69,33 @@ export const GET_REPORT = gql`
       }
     }
   }
-`
+`;
 
 export const SUBMISSION_SUBSCRIPTION = gql`
   subscription submissionsForAssignment($userId: bigint, $assignmentConfigId: bigint!) {
     submissions(
-      order_by: [
-        {
-          created_at: desc
-        }
-      ]
-      where: {
-        user_id: { _eq: $userId }
-        assignment_config_id: { _eq: $assignmentConfigId }
-      }
+      order_by: [{ created_at: desc }]
+      where: { user_id: { _eq: $userId }, assignment_config_id: { _eq: $assignmentConfigId } }
     ) {
       id
       created_at
       upload_name
       fail_reason
-      reports(order_by: [
-        {
-          createdAt: desc
-        }
-      ]) {
+      reports(order_by: [{ createdAt: desc }]) {
         id
         is_final
         createdAt
       }
     }
   }
-`
+`;
 
 export const GET_ASSIGNMENTS = gql`
   query getAssignmentsFromCourses($courseIds: [bigint!]!, $userId: bigint!) {
     user(id: $userId) {
       assignedTasks(
-        where: {
-          assignment_config: {
-            assignment: {
-              course_id: { _in: $courseIds }
-            }
-          }
-        }
-        order_by: [
-          {
-            assignment_config: {
-              assignment: {
-                type: asc
-              }
-              showAt: desc
-            }
-          }
-        ]
+        where: { assignment_config: { assignment: { course_id: { _in: $courseIds } } } }
+        order_by: [{ assignment_config: { assignment: { type: asc }, showAt: desc } }]
       ) {
         assignment_config {
           id
@@ -152,7 +116,7 @@ export const GET_ASSIGNMENTS = gql`
       }
     }
   }
-`
+`;
 
 export const GET_ASSIGNMENT_DETAIL = gql`
   query getAssignmentDetail($assignmentConfigId: bigint!) {
@@ -171,11 +135,7 @@ export const GET_ASSIGNMENT_DETAIL = gql`
           code
           name
           website
-          users(where: {
-            permission: {
-              _gt: 1
-            }
-          }) {
+          users(where: { permission: { _gt: 1 } }) {
             user {
               name
               itsc
@@ -188,4 +148,4 @@ export const GET_ASSIGNMENT_DETAIL = gql`
       }
     }
   }
-`
+`;

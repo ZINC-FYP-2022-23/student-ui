@@ -1,22 +1,23 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 
-export default async function (req:  NextApiRequest, res: NextApiResponse) { 
-    const body = JSON.parse(req.body)
-    const token = body.registrationToken
-    const id = body.userId
-    const currentSemester = body.currentSemester
-    try {
-        // Seach for old subscription
-        const {data:{data}} = await axios({
-            method: 'post',
-            headers: {
-            'X-Hasura-Admin-Secret': process.env.HASURA_GRAPHQL_ADMIN_SECRET
-            },
-            url: `https://${process.env.API_URL}/v1/graphql`,
-            data: {
-            query: 
-            `query getUserData($id: bigint!, $semesterId: bigint!) {
+export default async function (req: NextApiRequest, res: NextApiResponse) {
+  const body = JSON.parse(req.body);
+  const token = body.registrationToken;
+  const id = body.userId;
+  const currentSemester = body.currentSemester;
+  try {
+    // Seach for old subscription
+    const {
+      data: { data },
+    } = await axios({
+      method: "post",
+      headers: {
+        "X-Hasura-Admin-Secret": process.env.HASURA_GRAPHQL_ADMIN_SECRET,
+      },
+      url: `https://${process.env.API_URL}/v1/graphql`,
+      data: {
+        query: `query getUserData($id: bigint!, $semesterId: bigint!) {
                 section_user(where: {
                     user_id: {_eq: $id},
                       section: {
@@ -28,58 +29,57 @@ export default async function (req:  NextApiRequest, res: NextApiResponse) {
                     submissions
                 }
             }`,
-            variables: {id, semesterId:currentSemester}
-            },
-        });
-        console.log(data)
-        console.log('A Part')
+        variables: { id, semesterId: currentSemester },
+      },
+    });
+    console.log(data);
+    console.log("A Part");
 
-        for(let j=0;j<data.section_user.length;j++){
-            for(let i=0;i<data.section_user[j].submissions.length;i++){
-                const topic = "s" + id.toString() + "-" + data.section_user[j].submissions[i].toString()
-                await axios({
-                    method: 'post',
-                    url: `http://webhook/trigger/notifications/subscribe/${topic}`,
-                    data: {
-                        registrationToken: token,
-                        userId: id
-                    }
-                });
-            }
-        }
-        
-        
-        // update the notification on DB
-        const result = await axios({
-            method: 'post',
-            headers: {
-            'X-Hasura-Admin-Secret': process.env.HASURA_GRAPHQL_ADMIN_SECRET
-            },
-            url: `https://${process.env.API_URL}/v1/graphql`,
-            data: {
-            query: `
+    for (let j = 0; j < data.section_user.length; j++) {
+      for (let i = 0; i < data.section_user[j].submissions.length; i++) {
+        const topic = "s" + id.toString() + "-" + data.section_user[j].submissions[i].toString();
+        await axios({
+          method: "post",
+          url: `http://webhook/trigger/notifications/subscribe/${topic}`,
+          data: {
+            registrationToken: token,
+            userId: id,
+          },
+        });
+      }
+    }
+
+    // update the notification on DB
+    const result = await axios({
+      method: "post",
+      headers: {
+        "X-Hasura-Admin-Secret": process.env.HASURA_GRAPHQL_ADMIN_SECRET,
+      },
+      url: `https://${process.env.API_URL}/v1/graphql`,
+      data: {
+        query: `
                 mutation updateUsers($notification: String!, $id: bigint!) {
                 updateUser(_set: {notification: $notification}, pk_columns: {id: $id}) {
                     notification
                 }
                 }`,
-            variables: {notification:token, id}
-            },
-        });
-        console.log(result.data)
-        res.json({status:"success"})
-        
-        console.log(data)
-    } catch (error: any) {
-        return res.status(500).json({
-            status: 'error',
-            error: error.message
-        });
-    }
+        variables: { notification: token, id },
+      },
+    });
+    console.log(result.data);
+    res.json({ status: "success" });
+
+    console.log(data);
+  } catch (error: any) {
+    return res.status(500).json({
+      status: "error",
+      error: error.message,
+    });
+  }
 }
 
 export const config = {
   api: {
-    externalResolver: true
-  }
-}
+    externalResolver: true,
+  },
+};

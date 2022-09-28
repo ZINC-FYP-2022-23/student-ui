@@ -1,4 +1,4 @@
-import Head from 'next/head'
+import Head from "next/head";
 
 function Home() {
   return (
@@ -34,7 +34,12 @@ function Home() {
                   className="inline-flex items-center py-2 px-3 space-x-2 rounded-md bg-gray-800 text-gray-300 text-sm leading-5 font-medium shadow-lg hover:bg-gray-700 transition ease-in-out duration-100"
                 >
                   <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                    />
                   </svg>
                   <span>Back to ZINC</span>
                 </a>
@@ -46,72 +51,131 @@ function Home() {
               <blockquote>
                 <p>ZINC stands for "ZINC is not CASS".</p>
               </blockquote>
-              <p>It is an online assessment platform that allows you to submit your programming work for automated grading. Upon completion of grading, you will get back a report showing the results of the automated assessments.</p>
+              <p>
+                It is an online assessment platform that allows you to submit your programming work for automated
+                grading. Upon completion of grading, you will get back a report showing the results of the automated
+                assessments.
+              </p>
               <h3>Prepare a Zip File with your Source Code</h3>
-              <p>As ZINC only accepts zip file, you will need to prepare a zip file with your source code as described below. Note that you <strong>must compress the required files only</strong>, NOT a folder containing the files. Also, <strong>do not include any file that is not required</strong>. Check the lab/assignment page for the exact list of required files.</p>
-              <p>The following is for the Windows user, although the steps are very similar on macOS as well. macOS users may refer to this <a href="https://www.youtube.com/watch?v=euP3GCZn0sk">short YouTube video on compressing multiple files on macOS</a>. </p>
+              <p>
+                As ZINC only accepts zip file, you will need to prepare a zip file with your source code as described
+                below. Note that you <strong>must compress the required files only</strong>, NOT a folder containing the
+                files. Also, <strong>do not include any file that is not required</strong>. Check the lab/assignment
+                page for the exact list of required files.
+              </p>
+              <p>
+                The following is for the Windows user, although the steps are very similar on macOS as well. macOS users
+                may refer to this{" "}
+                <a href="https://www.youtube.com/watch?v=euP3GCZn0sk">
+                  short YouTube video on compressing multiple files on macOS
+                </a>
+                .{" "}
+              </p>
               <ol>
                 <li>Go to the folder where your source code is located.</li>
                 <li>
-                  <p>Suppose we want to produce a zip for lab 1 of COMP 2012 and let's say you only need to submit one .cpp file. Right-click the source file that you need to submit, click "Send to" and "Compressed (zipped) folder".</p>
-                  <p>If you need to submit multiple files, select/highlight all those files first (hold down ctrl key on Windows, and click on them one by one; or, just hold down your mouse to select a group of files), before you right-click one of them for compressing all selected files.</p>
-                  <img src="/guide/zip-file.png"/>
+                  <p>
+                    Suppose we want to produce a zip for lab 1 of COMP 2012 and let's say you only need to submit one
+                    .cpp file. Right-click the source file that you need to submit, click "Send to" and "Compressed
+                    (zipped) folder".
+                  </p>
+                  <p>
+                    If you need to submit multiple files, select/highlight all those files first (hold down ctrl key on
+                    Windows, and click on them one by one; or, just hold down your mouse to select a group of files),
+                    before you right-click one of them for compressing all selected files.
+                  </p>
+                  <img src="/guide/zip-file.png" />
                   <p>Now, you should see a zip file with your source code.</p>
-                  <img src="/guide/zip-finished.png"/>
+                  <img src="/guide/zip-finished.png" />
                 </li>
               </ol>
               <h3>How to Submit Your Work</h3>
               <blockquote>
-                <p>The following demonstrates the steps for submitting a lab/assignment of COMP 2012 for grading, however it is similar to submitting programming work for other supported programming courses as well, namely COMP1022P, COMP2011 and COMP3021</p>
+                <p>
+                  The following demonstrates the steps for submitting a lab/assignment of COMP 2012 for grading, however
+                  it is similar to submitting programming work for other supported programming courses as well, namely
+                  COMP1022P, COMP2011 and COMP3021
+                </p>
               </blockquote>
               <ol>
                 <li>
-                  <p>Go to <a href="https://zinc.cse.ust.hk">https://zinc.cse.ust.hk</a></p>
+                  <p>
+                    Go to <a href="https://zinc.cse.ust.hk">https://zinc.cse.ust.hk</a>
+                  </p>
                 </li>
                 <li>
                   <p>Login to ZINC using your ITSC credentials.</p>
-                  <img src="/guide/cas-login.png"/>
+                  <img src="/guide/cas-login.png" />
                 </li>
                 <li>
                   <p>If you have successfully login, you should see the following main page.</p>
-                  <img src="/guide/main-screen.png"/>
+                  <img src="/guide/main-screen.png" />
                 </li>
                 <li>
-                  <p>All assigned tasks (including lab task, assignments) will be shown in the middle bar section sorted by their release date.</p>
-                  <img src="/guide/assignment-view.png" alt=""/>
+                  <p>
+                    All assigned tasks (including lab task, assignments) will be shown in the middle bar section sorted
+                    by their release date.
+                  </p>
+                  <img src="/guide/assignment-view.png" alt="" />
                 </li>
                 <li>
-                  <p>To submit a snapshot of your work for the assignment, click on the highlighted "Upload a file" or drag your zip as the description says to perform the upload procedure.</p>
-                  <img src="/guide/upload-assignment.png" alt=""/>
+                  <p>
+                    To submit a snapshot of your work for the assignment, click on the highlighted "Upload a file" or
+                    drag your zip as the description says to perform the upload procedure.
+                  </p>
+                  <img src="/guide/upload-assignment.png" alt="" />
                 </li>
                 <li>
-                  <p>Go to the folder where you put your zip file, select the zip file (the one with your source code), and click "Open".</p>
-                  <img src="/guide/select-zip.png" alt=""/>
+                  <p>
+                    Go to the folder where you put your zip file, select the zip file (the one with your source code),
+                    and click "Open".
+                  </p>
+                  <img src="/guide/select-zip.png" alt="" />
                 </li>
                 <li>
-                  <p>After the zip file has been uploaded, you will see the following notification located on the top right corner. A row of text in the submission time-line view will also be displayed as a snapshot of your past submissions.</p>
-                  <img src="/guide/file-submitted.png" alt=""/>
+                  <p>
+                    After the zip file has been uploaded, you will see the following notification located on the top
+                    right corner. A row of text in the submission time-line view will also be displayed as a snapshot of
+                    your past submissions.
+                  </p>
+                  <img src="/guide/file-submitted.png" alt="" />
                 </li>
                 <li>
-                  <p>ZINC should start grading your submitted lab/assignment. Please note that it normally takes a few seconds to complete the grading. The grading process should be in progress momentarily and when the grading is done, you should see the following in real time.</p>
-                  <img src="/guide/assignment-graded.png" alt=""/>
+                  <p>
+                    ZINC should start grading your submitted lab/assignment. Please note that it normally takes a few
+                    seconds to complete the grading. The grading process should be in progress momentarily and when the
+                    grading is done, you should see the following in real time.
+                  </p>
+                  <img src="/guide/assignment-graded.png" alt="" />
                 </li>
                 <li>
-                  <p>If you would like to check the grade details, click on "View Details" and you will see the report popping out from the right hand side.</p>
-                  <img src="/guide/view-report.png" alt=""/>
+                  <p>
+                    If you would like to check the grade details, click on "View Details" and you will see the report
+                    popping out from the right hand side.
+                  </p>
+                  <img src="/guide/view-report.png" alt="" />
                 </li>
                 <li>
-                  <p>You can view details in the report like compilation status, file structure validation and most importantly, test cases your TA has prepared to test the outputs of your program.</p>
-                  <img src="/guide/check-output.png" alt=""/>
+                  <p>
+                    You can view details in the report like compilation status, file structure validation and most
+                    importantly, test cases your TA has prepared to test the outputs of your program.
+                  </p>
+                  <img src="/guide/check-output.png" alt="" />
                 </li>
               </ol>
-              <p><strong>Note for macOS users:</strong> macOS may add some "extra" stuff like "__MACOSX" to your zip file. ZINC may report that those are "extra files". You may just ignore those "errors" and check the test case results. If you really need to remove those extra files because it affects the test cases somehow, you may follow <a href="https://wpguru.co.uk/2013/10/how-to-remove-__macosx-from-zip-archives/">this guide</a>.</p>
+              <p>
+                <strong>Note for macOS users:</strong> macOS may add some "extra" stuff like "__MACOSX" to your zip
+                file. ZINC may report that those are "extra files". You may just ignore those "errors" and check the
+                test case results. If you really need to remove those extra files because it affects the test cases
+                somehow, you may follow{" "}
+                <a href="https://wpguru.co.uk/2013/10/how-to-remove-__macosx-from-zip-archives/">this guide</a>.
+              </p>
             </div>
           </div>
         </article>
       </div>
     </div>
-  )
+  );
 }
 
-export default Home
+export default Home;

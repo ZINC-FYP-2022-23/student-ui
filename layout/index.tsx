@@ -7,22 +7,21 @@ import { MobileMenuToggle } from "../components/Navigation/Mobile";
 import { useZinc } from "../contexts/zinc";
 
 interface LayoutProps {
-  title?: string
-  children?: JSX.Element
+  title?: string;
+  children?: JSX.Element;
 }
 
 export function Layout({ children, title }: LayoutProps) {
-
   const { useSidebar } = useZinc();
   const { data, loading, error } = useSidebar();
 
   return (
     <div className="h-screen flex flex-col">
       <Head>
-        <title>{ title } - Zinc</title>
+        <title>{title} - Zinc</title>
       </Head>
       <header className="flex flex-shrink-0 h-14">
-        { !loading && <UserDropdown name={data.user.name} initials={data.user.initials}/>}
+        {!loading && <UserDropdown name={data.user.name} initials={data.user.initials} />}
         <div className="flex-1 flex items-center justify-between px-6 bg-cse-700">
           <nav className="flex">
             {/* <a href="#" className="inline-block ml-2 bg-cse-800 rounded-md px-3 py-2 leading-none text-sm font-medium text-white">All</a>
@@ -44,17 +43,20 @@ export function Layout({ children, title }: LayoutProps) {
             {/* <button className="ml-4 p-2 border-2 h-8 w-8 flex items-center justify-center border-transparent rounded-full focus:bg-cse-600 focus:outline-none text-gray-400 hover:text-gray-200 transition ease-in-out duration-150" aria-label="Notifications" data-flow="down">
               <FontAwesomeIcon icon={['fad', 'bell']} />
             </button> */}
-            <a href="/guide" className="ml-4 p-2 border-2 flex items-center justify-center border-transparent rounded-md focus:bg-cse-600 focus:outline-none text-gray-400 hover:text-gray-200 transition ease-in-out duration-150">
-              <FontAwesomeIcon className="h-8 w-8" icon={['fad', 'question-circle']} />
+            <a
+              href="/guide"
+              className="ml-4 p-2 border-2 flex items-center justify-center border-transparent rounded-md focus:bg-cse-600 focus:outline-none text-gray-400 hover:text-gray-200 transition ease-in-out duration-150"
+            >
+              <FontAwesomeIcon className="h-8 w-8" icon={["fad", "question-circle"]} />
               <span className="ml-2 leading-none text-sm font-medium text-white">Submission Guideline</span>
             </a>
           </div>
         </div>
       </header>
       <div className="flex-1 flex overflow-hidden">
-        { !loading && <Navigation courses={data.user.courses}/> }
-        { children }
+        {!loading && <Navigation courses={data.user.courses} />}
+        {children}
       </div>
     </div>
-  )
+  );
 }

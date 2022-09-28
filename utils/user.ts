@@ -3,9 +3,9 @@ import axios from "axios";
 async function createUser(itsc: string, name: string): Promise<any> {
   try {
     const { data } = await axios({
-      method: 'post',
+      method: "post",
       headers: {
-        'X-Hasura-Admin-Secret': process.env.HASURA_GRAPHQL_ADMIN_SECRET
+        "X-Hasura-Admin-Secret": process.env.HASURA_GRAPHQL_ADMIN_SECRET,
       },
       url: `https://${process.env.API_URL}/v1/graphql`,
       data: {
@@ -18,23 +18,27 @@ async function createUser(itsc: string, name: string): Promise<any> {
               }
             ){ id }
           }`,
-        variables: { itsc, name }
+        variables: { itsc, name },
       },
     });
-    console.log(`[!] Created new user for itsc id: ${itsc}`)
-    const { data: { createUser }} = data;
+    console.log(`[!] Created new user for itsc id: ${itsc}`);
+    const {
+      data: { createUser },
+    } = data;
     return createUser.id;
   } catch (error) {
     throw error;
   }
 }
 
-export async function getUserData(itsc: string, name:string): Promise<any> {
+export async function getUserData(itsc: string, name: string): Promise<any> {
   try {
-    const { data: { data } } = await axios({
-      method: 'post',
+    const {
+      data: { data },
+    } = await axios({
+      method: "post",
       headers: {
-        'X-Hasura-Admin-Secret': process.env.HASURA_GRAPHQL_ADMIN_SECRET
+        "X-Hasura-Admin-Secret": process.env.HASURA_GRAPHQL_ADMIN_SECRET,
       },
       url: `https://${process.env.API_URL}/v1/graphql`,
       data: {
@@ -57,11 +61,11 @@ export async function getUserData(itsc: string, name:string): Promise<any> {
                 id
               }
             }`,
-        variables: { itsc }
+        variables: { itsc },
       },
     });
     let userId;
-    if(data.users.length===0) {
+    if (data.users.length === 0) {
       userId = await createUser(itsc, name);
     } else {
       userId = data.users[0].id;
@@ -69,7 +73,7 @@ export async function getUserData(itsc: string, name:string): Promise<any> {
     const [semester] = data.semesters;
     return {
       userId,
-      semesterId: semester.id
+      semesterId: semester.id,
     };
   } catch (error) {
     throw error;

@@ -1,4 +1,4 @@
-import Head from 'next/head'
+import Head from "next/head";
 import { Layout } from "../layout";
 
 function Home() {
@@ -6,7 +6,7 @@ function Home() {
     <Layout>
       <div>test</div>
     </Layout>
-  )
+  );
 }
 
-export default Home
+export default Home;
