@@ -10,6 +10,7 @@ import { initializeApollo } from "../../../lib/apollo";
 import { ReportSlideOver } from "../../../components/Report/index";
 import { StdioTestDetailView } from "../../../components/Report/StdioTestStageReport";
 import { ValgrindDetailView } from "../../../components/Report/ValgrindStageReport";
+import { AssignmentConfig } from "../../../types";
 
 function ModalContent() {
   const { modalType } = useLayoutState();
@@ -26,7 +27,7 @@ function ModalContent() {
 function Assignment() {
   const router = useRouter();
   const { assignmentId } = router.query;
-  const { data, loading } = useQuery(GET_ASSIGNMENT_DETAIL, {
+  const { data, loading } = useQuery<{ assignmentConfig: AssignmentConfig }>(GET_ASSIGNMENT_DETAIL, {
     variables: {
       assignmentConfigId: parseInt(assignmentId as string, 10),
     },
@@ -34,10 +35,10 @@ function Assignment() {
 
   return (
     <LayoutProvider>
-      <Layout title={data.assignmentConfig.assignment.name}>
+      <Layout title={data!.assignmentConfig.assignment.name}>
         <main className="flex-1 flex bg-gray-200">
           <AssignmentSection />
-          <AssignmentContent content={data.assignmentConfig} />
+          <AssignmentContent content={data!.assignmentConfig} />
         </main>
       </Layout>
       <SlideOver>
