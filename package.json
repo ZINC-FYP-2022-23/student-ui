@@ -25,7 +25,6 @@
     "adm-zip": "^0.4.16",
     "autoprefixer": "^10.4.0",
     "axios": "^0.21.1",
-    "connect-redis": "^5.0.0",
     "cookie": "^0.4.1",
     "cors": "^2.8.5",
     "express": "^4.17.1",
@@ -37,7 +36,6 @@
     "graphql": "^15.3.0",
     "jszip": "^3.5.0",
     "localforage": "^1.10.0",
-    "moment": "^2.27.0",
     "monaco-editor": "^0.20.0",
     "next": "12",
     "postcss": "^8.3.11",
@@ -48,10 +46,8 @@
     "react-gh-like-diff": "^2.0.2",
     "react-hot-toast": "^2.1.1",
     "react-transition-group": "^4.4.1",
-    "reactour": "^1.18.0",
     "redis": "^3.0.2",
     "sha256-file": "^1.0.0",
-    "string-to-color": "^2.2.2",
     "subscriptions-transport-ws": "^0.9.18"
   },
   "devDependencies": {
