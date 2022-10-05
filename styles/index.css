@@ -181,3 +181,12 @@
 [aria-label][data-flow^="right"]:hover::after {
   animation: tooltips-horz 150ms ease-out forwards;
 }
+
+/* Mantine Rich Text Editor */
+.mantine-RichTextEditor-root ul {
+  list-style-type: disc;
+}
+
+.mantine-RichTextEditor-root ol {
+  list-style-type: decimal;
+}

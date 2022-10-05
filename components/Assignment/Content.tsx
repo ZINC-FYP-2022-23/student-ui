@@ -8,6 +8,8 @@ import { useLayoutDispatch } from "../../contexts/layout";
 import { useSubscription } from "@apollo/client";
 import { SUBMISSION_SUBSCRIPTION } from "../../graphql/queries/user";
 import { SubmissionLoader } from "../SubmissionLoader";
+import Link from "next/link";
+import { AssignmentConfig } from "../../types";
 // import { Notification, SubmissionNotification } from "../Notification";
 // import toast from "react-hot-toast";
 // import { useMutation} from "@apollo/client";
@@ -128,7 +130,7 @@ function AssignmentSubmission({ submissionClosed, configId, isOpen }) {
   }
 }
 
-export function AssignmentContent({ content }) {
+export function AssignmentContent({ content }: { content: AssignmentConfig }) {
   const assignmentCreatedDate = new Date(content.createdAt);
   assignmentCreatedDate.setTime(assignmentCreatedDate.getTime() + 8 * 60 * 60 * 1000);
   const { user } = useZinc();
@@ -200,6 +202,11 @@ export function AssignmentContent({ content }) {
                 submissionClosed={content.submissionWindowPassed}
                 isOpen={content.openForSubmission}
               />
+              <Link href={`/assignments/${content.id}/appeal`}>
+                <a className="px-3 py-1.5 mt-5 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
+                  <span>Appeal your grade</span>
+                </a>
+              </Link>
             </div>
           </li>
           {loading && <SubmissionLoader />}
