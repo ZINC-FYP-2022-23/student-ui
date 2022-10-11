@@ -21,7 +21,18 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "esnext",
-    "incremental": true
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@components/*": ["components/*"],
+      "@contexts/*": ["contexts/*"],
+      "@graphql/*": ["graphql/*"],
+      "@layout": ["layout/"],
+      "@lib/*": ["lib/*"],
+      "@types": ["types/"],
+      "@types/*": ["types/*"],
+      "@utils/*": ["utils/*"]
+    }
   },
   "exclude": [
     "node_modules"
