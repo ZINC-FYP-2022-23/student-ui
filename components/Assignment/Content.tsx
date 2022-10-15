@@ -8,6 +8,7 @@ import { useLayoutDispatch } from "../../contexts/layout";
 import { useSubscription } from "@apollo/client";
 import { SUBMISSION_SUBSCRIPTION } from "../../graphql/queries/user";
 import { SubmissionLoader } from "../SubmissionLoader";
+import { AssignmentConfig } from "@types";
 // import { Notification, SubmissionNotification } from "../Notification";
 // import toast from "react-hot-toast";
 // import { useMutation} from "@apollo/client";
@@ -128,7 +129,7 @@ function AssignmentSubmission({ submissionClosed, configId, isOpen }) {
   }
 }
 
-export function AssignmentContent({ content }) {
+export function AssignmentContent({ content }: { content: AssignmentConfig }) {
   const assignmentCreatedDate = new Date(content.createdAt);
   assignmentCreatedDate.setTime(assignmentCreatedDate.getTime() + 8 * 60 * 60 * 1000);
   const { user } = useZinc();
@@ -194,7 +195,7 @@ export function AssignmentContent({ content }) {
               <div className="mt-4 w-full">
                 <SubmissionCollectionStatus closed={content.submissionWindowPassed} dueAt={content.dueAt} />
               </div>
-              <p className="my-4 leading-4">{content.assignment.description}</p>
+              <div className="my-6" dangerouslySetInnerHTML={{ __html: content.assignment.description }} />
               <AssignmentSubmission
                 configId={content.id}
                 submissionClosed={content.submissionWindowPassed}
