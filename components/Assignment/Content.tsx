@@ -9,7 +9,7 @@ import { useSubscription } from "@apollo/client";
 import { SUBMISSION_SUBSCRIPTION } from "../../graphql/queries/user";
 import { SubmissionLoader } from "../SubmissionLoader";
 import Link from "next/link";
-import { AssignmentConfig } from "../../types";
+import { AssignmentConfig } from "@types";
 // import { Notification, SubmissionNotification } from "../Notification";
 // import toast from "react-hot-toast";
 // import { useMutation} from "@apollo/client";
@@ -196,7 +196,7 @@ export function AssignmentContent({ content }: { content: AssignmentConfig }) {
               <div className="mt-4 w-full">
                 <SubmissionCollectionStatus closed={content.submissionWindowPassed} dueAt={content.dueAt} />
               </div>
-              <p className="my-4 leading-4">{content.assignment.description}</p>
+              <div className="my-6" dangerouslySetInnerHTML={{ __html: content.assignment.description }} />
               <AssignmentSubmission
                 configId={content.id}
                 submissionClosed={content.submissionWindowPassed}
