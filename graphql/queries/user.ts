@@ -85,6 +85,7 @@ export const SUBMISSION_SUBSCRIPTION = gql`
         id
         is_final
         createdAt
+        grade
       }
     }
   }

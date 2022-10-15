@@ -9,7 +9,7 @@ import { useSubscription } from "@apollo/client";
 import { SUBMISSION_SUBSCRIPTION } from "../../graphql/queries/user";
 import { SubmissionLoader } from "../SubmissionLoader";
 import Link from "next/link";
-import { AssignmentConfig } from "@types";
+import { AssignmentConfig, Grade, Submission as SubmissionType } from "@types";
 // import { Notification, SubmissionNotification } from "../Notification";
 // import toast from "react-hot-toast";
 // import { useMutation} from "@apollo/client";
@@ -130,17 +130,47 @@ function AssignmentSubmission({ submissionClosed, configId, isOpen }) {
   }
 }
 
+interface AssignmentContentProps {
+  assignmentId: number;
+  disabled: boolean;
+}
+
+function AppealGradeButton({ assignmentId, disabled }: AssignmentContentProps) {
+  if (disabled) {
+    return (
+      <button
+        disabled
+        className="px-3 py-1.5 mt-3 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-gray-400 bg-gray-100 cursor-not-allowed"
+      >
+        Appeal your grade
+      </button>
+    );
+  }
+  return (
+    <Link href={`/assignments/${assignmentId}/appeal`}>
+      <a className="px-3 py-1.5 mt-3 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
+        <span>Appeal your grade</span>
+      </a>
+    </Link>
+  );
+}
+
 export function AssignmentContent({ content }: { content: AssignmentConfig }) {
   const assignmentCreatedDate = new Date(content.createdAt);
   assignmentCreatedDate.setTime(assignmentCreatedDate.getTime() + 8 * 60 * 60 * 1000);
   const { user } = useZinc();
-  const { data, error, loading } = useSubscription(SUBMISSION_SUBSCRIPTION, {
+  const { data, loading } = useSubscription<{ submissions: SubmissionType[] }>(SUBMISSION_SUBSCRIPTION, {
     variables: {
       userId: user,
       assignmentConfigId: content.id,
     },
   });
-  // console.log(error)
+  let finalGrade: Grade | null = null;
+  if (data && data.submissions.length > 0 && data.submissions[0].reports.length > 0) {
+    finalGrade = data.submissions[0].reports[0].grade;
+  }
+  const isFullMarks = !!finalGrade && finalGrade.score === finalGrade.maxTotal;
+
   return (
     <div className="flex-1 overflow-y-auto">
       <div>
@@ -202,15 +232,22 @@ export function AssignmentContent({ content }: { content: AssignmentConfig }) {
                 submissionClosed={content.submissionWindowPassed}
                 isOpen={content.openForSubmission}
               />
-              <Link href={`/assignments/${content.id}/appeal`}>
-                <a className="px-3 py-1.5 mt-5 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
-                  <span>Appeal your grade</span>
-                </a>
-              </Link>
+              {finalGrade && (
+                <div className="w-full mt-4 py-3 flex flex-col items-center bg-green-50 rounded-lg">
+                  <p className="text-green-800 font-medium">
+                    Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
+                  </p>
+                  {/* TODO(Bryan): Refine the logic for determining whether appeal is allowed.
+                   * Related: https://github.com/ZINC-FYP-2022-23/student-ui/issues/9
+                   * (Delete this comment once you finished)
+                   */}
+                  <AppealGradeButton assignmentId={content.id} disabled={isFullMarks} />
+                </div>
+              )}
             </div>
           </li>
           {loading && <SubmissionLoader />}
-          {!loading && data.submissions.map((submission) => <Submission key={submission.id} submission={submission} />)}
+          {data && data.submissions.map((submission) => <Submission key={submission.id} submission={submission} />)}
         </ul>
       </div>
     </div>
