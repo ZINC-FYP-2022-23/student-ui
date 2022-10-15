@@ -1,9 +1,12 @@
+const colors = require('tailwindcss/colors')
 const defaultTheme = require('tailwindcss/defaultTheme')
 
 module.exports = {
-  purge: {
-    enabled: false,
-  },
+  content: [
+    './components/**/*.tsx',
+    './layout/**/*.tsx',
+    './pages/**/*.tsx',
+  ],
   theme: {
     typography: (theme) => ({
       default: {
@@ -18,6 +21,12 @@ module.exports = {
     }),
     extend: {
       colors: {
+        // https://tailwindcss.com/docs/upgrade-guide#removed-color-aliases
+        green: colors.emerald,
+        yellow: colors.amber,
+        purple: colors.violet,
+        "cool-gray": colors.slate,
+        current: 'currentColor',
         cse: {
           '100': '#8FADE0',
           '200': '#6F95D8',
@@ -36,8 +45,5 @@ module.exports = {
       }
     },
   },
-  variants: {},
-  plugins: [
-    require('@tailwindcss/ui')
-  ],
+  plugins: [],
 }

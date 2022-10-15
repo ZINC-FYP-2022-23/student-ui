@@ -2,34 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer components {
-  .d2h-file-list-title {
-    @apply hidden;
-  }
+/* After upgrading to Tailwind v3.1, the following styles are not successfully loading
+ * if they are wrapped with `@layer components`. Thus, `@layer components` is removed
+ * as a hot fix.
+ */
 
-  .d2h-icon.d2h-moved {
-    @apply hidden;
-  }
-
-  .d2h-file-name {
-    @apply hidden;
-  }
-
-  .d2h-file-list-line {
-    @apply hidden;
-  }
-
-  .d2h-tag.d2h-moved.d2h-moved-tag {
-    @apply hidden;
-  }
-
-  .d2h-file-wrapper {
-    @apply rounded-lg;
-  }
-  .d2h-file-header {
-    @apply rounded-tl-lg rounded-tr-lg;
-  }
+/* @layer components { */
+.d2h-file-list-title {
+  @apply hidden;
 }
+
+.d2h-icon.d2h-moved {
+  @apply hidden;
+}
+
+.d2h-file-name {
+  @apply hidden;
+}
+
+.d2h-file-list-line {
+  @apply hidden;
+}
+
+.d2h-tag.d2h-moved.d2h-moved-tag {
+  @apply hidden;
+}
+
+.d2h-file-wrapper {
+  @apply rounded-lg;
+}
+.d2h-file-header {
+  @apply rounded-tl-lg rounded-tr-lg;
+}
+/* } */
 
 [aria-label] {
   position: relative; /* opinion 1 */
