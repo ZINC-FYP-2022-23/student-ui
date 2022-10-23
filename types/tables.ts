@@ -2,6 +2,8 @@
  * @file Types for the database tables.
  */
 
+import { GraderReport, ScoreReports } from "./report";
+
 export type Assignment = {
   configs: AssignmentConfig[];
   course: Course;
@@ -19,6 +21,7 @@ export type Assignment = {
 };
 
 export type AssignmentConfig = {
+  affected_users: AssignmentConfigUser[];
   assignment: Assignment;
   assignment_id: number;
   attemptLimits?: number;
@@ -29,12 +32,14 @@ export type AssignmentConfig = {
   dueAt: string;
   gradeImmediately: boolean;
   id: number;
+  /** Whether the current time is after `startCollectionAt`. It equals to false if `startCollectionAt` is null. */
   openForSubmission: boolean;
   releaseGradeAt?: string;
-  showAt: string;
+  showAt?: string;
   showImmediateScores: boolean;
-  startCollectionAt: string;
+  startCollectionAt?: string;
   stopCollectionAt: string;
+  /** Whether the current time is after `stopCollectionAt`. */
   submissionWindowPassed: boolean;
   updatedAt: string;
 };
@@ -89,36 +94,11 @@ export type CourseUserRole = "Student" | "Teaching Staff";
 
 export type Grade = {
   score: number;
-  details: GradeDetail;
+  details: ScoreReports;
   maxTotal: number;
   isSuccess: boolean;
   gradedTotal: number;
   hasTimedOut: boolean;
-};
-
-export type GradeDetail = {
-  reports: PipelineReport[];
-  accScore: number;
-  accTotal: number;
-};
-
-export type PipelineReport = {
-  hash: string;
-  score: number;
-  total: number;
-  displayName: string;
-  stageReportPath: string;
-  stageMangledName: string;
-  testCaseReportPath: string;
-  testCaseMangledName: string;
-};
-
-export type PipelineResult = {
-  configError?: string;
-  contextError?: string;
-  scoreReports: GradeDetail;
-  // TODO: Typing on stage reports
-  stageReports: any;
 };
 
 export type Report = {
@@ -129,7 +109,7 @@ export type Report = {
   initiated_by: number;
   is_final: boolean;
   is_test: boolean;
-  pipeline_results: PipelineResult;
+  pipeline_results: GraderReport;
   remarks: object;
   // TODO: Typing on stage reports (same as `PipelineResult.stageReports`)
   sanitizedReports: any;
@@ -147,7 +127,7 @@ export type Section = {
   id: number;
   name: string;
   updated_at: string;
-  users: User[];
+  users: SectionUser[];
 };
 
 export type SectionUser = {
