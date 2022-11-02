@@ -54,7 +54,11 @@ export function Layout({ children, title }: LayoutProps) {
         </div>
       </header>
       <div className="flex-1 flex overflow-hidden">
-        {!loading && <Navigation courses={data.user.courses} />}
+        {loading ? (
+          <div className="hidden md:block w-64 p-6 bg-gray-100 overflow-y-auto" />
+        ) : (
+          <Navigation courses={data.user.courses} />
+        )}
         {children}
       </div>
     </div>
