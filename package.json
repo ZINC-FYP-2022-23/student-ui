@@ -16,7 +16,6 @@
     "@apollo/react-ssr": "^4.0.0",
     "@fortawesome/fontawesome-svg-core": "^6.1.1",
     "@fortawesome/pro-duotone-svg-icons": "^6.1.1",
-    "@fortawesome/pro-light-svg-icons": "^6.1.1",
     "@fortawesome/pro-regular-svg-icons": "^6.1.1",
     "@fortawesome/react-fontawesome": "^0.1.18",
     "@headlessui/react": "^1.5.0",
