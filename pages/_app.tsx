@@ -1,6 +1,6 @@
 import { ApolloProvider } from "@apollo/client";
 import { parse } from "cookie";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { config as faConfig, library } from "@fortawesome/fontawesome-svg-core";
 import { fad } from "@fortawesome/pro-duotone-svg-icons";
 import { far } from "@fortawesome/pro-regular-svg-icons";
 import { useApollo } from "../lib/apollo";
@@ -8,9 +8,11 @@ import { ZincProvider } from "../contexts/zinc";
 import toast from "react-hot-toast";
 import { Notification, NotificationBody } from "../components/Notification";
 
+import "@fortawesome/fontawesome-svg-core/styles.css";
 import "react-gh-like-diff/dist/css/diff2html.min.css";
 import "../styles/index.css";
 
+faConfig.autoAddCss = false;
 library.add(fad, far);
 
 function ZincApp({ Component, pageProps, user, semester, cookie }) {
