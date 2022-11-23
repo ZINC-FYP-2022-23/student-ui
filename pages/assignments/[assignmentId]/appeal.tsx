@@ -1,62 +1,61 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { fad } from "@fortawesome/pro-duotone-svg-icons";
+import { far } from "@fortawesome/pro-regular-svg-icons";
 import { GetServerSideProps } from "next";
-import RichTextEditor from "@components/RichTextEditor";
+import React, { useState } from "react";
 import Link from "next/link";
-import { AssignmentSection } from "../../../components/Assignment/List";
+import RichTextEditor from "@components/RichTextEditor";
+
 import { LayoutProvider } from "../../../contexts/layout";
 import { Layout } from "../../../layout";
-import React, { useState } from "react";
+import { AssignmentSection } from "../../../components/Assignment/List";
 import { Alert } from "@mantine/core";
-import { IconAlertCircle } from "@tabler/icons";
+import { GET_APPEAL_DETAIL } from "../../../graphql/queries/user";
 
-interface GradeAppealProps {
-  assignmentId: number;
-  acceptAppeal: boolean;
-  errorMessage: String;
-  numAppealsLeft: number;
+import { Submission } from "../../../types";
+import { initializeApollo } from "@lib/apollo";
+
+library.add(fad, far);
+
+/*  Possible values for type Condition:
+ *   NotSubmitted: The student has not submitted anything yet for the assignment
+ *   Processing: The system is still processing the assignment
+ *   NoAppealLeft: The number of appeal attempts left is zero
+ *   FullMark: The student got full mark in the assignment
+ *   NotFullMark: The student did NOT get full mark in the assignment
+ */
+enum Condition {
+  NotSubmitted,
+  Processing,
+  NoAppealLeft,
+  FullMark,
+  NotFullMark,
 }
 
-function GradeAppeal({ assignmentId, acceptAppeal, errorMessage, numAppealsLeft }: GradeAppealProps) {
-  // FIXME: Remove these temporary values and Assign with actual ones
-  acceptAppeal = false;
-  errorMessage = "You are not allowed to submit an appeal due to XXXXXX.";
-  numAppealsLeft = 999;
-
+function Button() {
   return (
-    <LayoutProvider>
-      <Layout title="Grade Appeal">
-        <main className="flex-1 flex bg-gray-200">
-          <AssignmentSection />
-          <div className="p-5 flex flex-1 flex-col overflow-y-auto">
-            {acceptAppeal ? (
-              <AppealAccept assignmentId={assignmentId} numAppealsLeft={numAppealsLeft} />
-            ) : (
-              <AppealReject assignmentId={assignmentId} message={errorMessage} />
-            )}
-          </div>
-        </main>
-      </Layout>
-    </LayoutProvider>
+    <div>
+      <button
+        className="px-4 py-1 rounded-md text-lg bg-green-500 text-white hover:bg-green-600 active:bg-green-700 transition ease-in-out duration-150"
+        onClick={() => {
+          // TODO(Bryan): Submit the appeal
+          // TODO(Bryan): Validate whether "Justification and comments" is filled
+        }}
+      >
+        Submit
+      </button>
+    </div>
   );
 }
-
-export const getServerSideProps: GetServerSideProps = async ({ query }) => {
-  const assignmentId = parseInt(query.assignmentId as string);
-  return {
-    props: {
-      assignmentId,
-    },
-  };
-};
-
-export default GradeAppeal;
 
 type AppealAcceptProps = {
   assignmentId: number;
   numAppealsLeft: number;
+  condition: Condition;
 };
 
-function AppealAccept({ assignmentId, numAppealsLeft }: AppealAcceptProps) {
+function AppealAccept({ assignmentId, numAppealsLeft, condition }: AppealAcceptProps) {
   const [comments, setComments] = useState("");
 
   return (
@@ -89,7 +88,7 @@ function AppealAccept({ assignmentId, numAppealsLeft }: AppealAcceptProps) {
           Do NOT upload specific fixed files. Upload as if you are submitting for the whole assignment. The system will
           find out the fixed codes automatically.
         </p>
-        {/* TODO: Add drag and drop support */}
+        {/* TODO(Bryan): Add drag and drop support */}
         <div className="bg-white p-4 rounded-md">
           <div
             className={`flex justify-center px-6 pt-5 pb-6 border-2 focus:outline-none w-full border-dashed rounded-md`}
@@ -115,15 +114,19 @@ function AppealAccept({ assignmentId, numAppealsLeft }: AppealAcceptProps) {
             submission.
           </p>
         </div>
-        <button
-          className="px-4 py-1 rounded-md text-lg bg-green-500 text-white hover:bg-green-600 active:bg-green-700 transition ease-in-out duration-150"
-          onClick={() => {
-            // TODO: Submit the appeal
-            // TODO: Validate whether "Justification and comments" is filled
-          }}
-        >
-          Submit
-        </button>
+        {condition == Condition.FullMark ? (
+          <div className="flex flex-col items-center w-full py-3 bg-red-50 rounded-lg mt-4 mb-4">
+            <div className="flex items-center mt-4 mb-4">
+              <FontAwesomeIcon icon={["far", "octagon-exclamation"]} className="text-red-600 mr-2 text-lg" />
+              <p className="text-red-600 text-lg font-medium">
+                Your have got Full Mark. Are you sure you wish to submit a grade appeal?
+              </p>
+            </div>
+            <Button />
+          </div>
+        ) : (
+          <Button />
+        )}
       </div>
     </div>
   );
@@ -146,10 +149,115 @@ function AppealReject({ assignmentId, message }: AppealRejectProps) {
         </Link>
       </div>
       <div className="my-6 mt-8 flex flex-col items-center self-center mb-4">
-        <Alert icon={<IconAlertCircle size={16} />} title="Appeal Unavailable" color="red" variant="filled">
-          {message}
+        <Alert
+          icon={<FontAwesomeIcon icon={["far", "circle-exclamation"]} />}
+          title="Appeal Unavailable"
+          color="red"
+          variant="filled"
+        >
+          {"You are not allowed to submit an appeal due to the following reason: "}
+          <br />
+          <strong>{message}</strong>
         </Alert>
       </div>
     </div>
   );
 }
+
+interface GradeAppealProps {
+  assignmentId: number;
+  numAppealsLeft: number;
+  condition: Condition;
+}
+
+function GradeAppeal({ assignmentId, numAppealsLeft, condition }: GradeAppealProps) {
+  let errorMessage: String = "";
+  let acceptAppeal: boolean;
+
+  // Check the condition and decide if appeal is allowed
+  switch (condition) {
+    case Condition.NotSubmitted: {
+      errorMessage = "You have not submitted anything yet.";
+      acceptAppeal = false;
+      break;
+    }
+    case Condition.Processing: {
+      errorMessage = "Submission is still being processed.";
+      acceptAppeal = false;
+      break;
+    }
+    case Condition.NoAppealLeft: {
+      errorMessage = "No more Appeal Attempts left.";
+      acceptAppeal = false;
+      break;
+    }
+    case Condition.FullMark: {
+      acceptAppeal = true;
+      break;
+    }
+    case Condition.NotFullMark: {
+      acceptAppeal = true;
+      break;
+    }
+  }
+
+  return (
+    <LayoutProvider>
+      <Layout title="Grade Appeal">
+        <main className="flex-1 flex bg-gray-200">
+          <AssignmentSection />
+          <div className="p-5 flex flex-1 flex-col overflow-y-auto">
+            {acceptAppeal ? (
+              <AppealAccept assignmentId={assignmentId} numAppealsLeft={numAppealsLeft} condition={condition} />
+            ) : (
+              <AppealReject assignmentId={assignmentId} message={errorMessage} />
+            )}
+          </div>
+        </main>
+      </Layout>
+    </LayoutProvider>
+  );
+}
+
+export const getServerSideProps: GetServerSideProps = async ({ req, query }) => {
+  const userId = parseInt(req.cookies.user);
+  const assignmentId = parseInt(query.assignmentId as string);
+  let condition = Condition.NotFullMark;
+
+  const apolloClient = initializeApollo(req.headers.cookie as string);
+  const { data } = await apolloClient.query<{ submissions: Submission[] }>({
+    query: GET_APPEAL_DETAIL,
+    variables: {
+      userId,
+      assignmentConfigId: assignmentId,
+    },
+  });
+
+  // TODO(Bryan): Get the value from database after it's updated
+  let numAppealsLeft = 1;
+
+  // Determine the condition based on the database state
+  if (data.submissions.length === 0) {
+    condition = Condition.NotSubmitted;
+  } else if (data.submissions[0].reports.length === 0) {
+    condition = Condition.Processing;
+  } else if (numAppealsLeft === 0) {
+    condition = Condition.NoAppealLeft;
+  } else {
+    const score = data.submissions[0].reports[0].grade.details.accScore;
+    const maxScore = data.submissions[0].reports[0].grade.details.accTotal;
+
+    score === maxScore ? (condition = Condition.FullMark) : (condition = Condition.NotFullMark);
+  }
+
+  return {
+    props: {
+      initialApolloState: apolloClient.cache.extract(),
+      assignmentId,
+      numAppealsLeft,
+      condition,
+    },
+  };
+};
+
+export default GradeAppeal;

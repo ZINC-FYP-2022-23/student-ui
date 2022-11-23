@@ -169,7 +169,11 @@ export function AssignmentContent({ content }: { content: AssignmentConfig }) {
   if (data && data.submissions.length > 0 && data.submissions[0].reports.length > 0) {
     finalGrade = data.submissions[0].reports[0].grade;
   }
-  const isFullMarks = !!finalGrade && finalGrade.score === finalGrade.maxTotal;
+
+  // TODO(Bryan): Get the number of Appeal Attempt Left from the Database after it's been updated
+  const appealAttemptLeft = 1;
+  let disabled = false;
+  if (appealAttemptLeft <= 0) disabled = true;
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -237,11 +241,8 @@ export function AssignmentContent({ content }: { content: AssignmentConfig }) {
                   <p className="text-green-800 font-medium">
                     Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
                   </p>
-                  {/* TODO(Bryan): Refine the logic for determining whether appeal is allowed.
-                   * Related: https://github.com/ZINC-FYP-2022-23/student-ui/issues/9
-                   * (Delete this comment once you finished)
-                   */}
-                  <AppealGradeButton assignmentId={content.id} disabled={isFullMarks} />
+                  <AppealGradeButton assignmentId={content.id} disabled={disabled} />
+                  <p className="text-green-600 font-medium text-xs mt-2">Appeal Attempts Left: {appealAttemptLeft}</p>
                 </div>
               )}
             </div>

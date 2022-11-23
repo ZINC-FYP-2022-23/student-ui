@@ -150,3 +150,17 @@ export const GET_ASSIGNMENT_DETAIL = gql`
     }
   }
 `;
+
+export const GET_APPEAL_DETAIL = gql`
+  query submissionsForAssignment($userId: bigint, $assignmentConfigId: bigint!) {
+    submissions(
+      order_by: [{ created_at: desc }]
+      where: { user_id: { _eq: $userId }, assignment_config_id: { _eq: $assignmentConfigId } }
+      limit: 1
+    ) {
+      reports(order_by: [{ createdAt: desc }]) {
+        grade
+      }
+    }
+  }
+`;
