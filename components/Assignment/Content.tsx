@@ -147,7 +147,7 @@ function AppealGradeButton({ assignmentId, disabled }: AssignmentContentProps) {
     );
   }
   return (
-    <Link href={`/assignments/${assignmentId}/appeal`}>
+    <Link href={`/assignments/${assignmentId}/appealSubmission`}>
       <a className="px-3 py-1.5 mt-3 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
         <span>Appeal your grade</span>
       </a>
