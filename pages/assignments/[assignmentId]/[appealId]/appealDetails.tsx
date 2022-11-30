@@ -1,6 +1,6 @@
-import { LayoutProvider, useLayoutState } from "../../../contexts/layout";
-import { Layout } from "../../../layout";
-import { AssignmentSection } from "../../../components/Assignment/List";
+import { LayoutProvider, useLayoutState } from "../../../../contexts/layout";
+import { Layout } from "../../../../layout";
+import { AssignmentSection } from "../../../../components/Assignment/List";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { GetServerSideProps } from "next";
@@ -8,6 +8,59 @@ import { Tab } from "@headlessui/react";
 import React, { useState } from "react";
 import RichTextEditor from "@components/RichTextEditor";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
+import { emit } from "process";
+
+enum AppealStatus {
+  Accept,
+  Reject,
+  Pending,
+}
+
+function AppealResult({ appealResult }: { appealResult: AppealStatus }) {
+  switch (appealResult) {
+    case AppealStatus.Accept: {
+      return (
+        <div className="flex flex-col items-center w-full py-3 bg-green-50 rounded-lg mt-4 mb-4">
+          <div className="flex items-center mt-2 mb-2">
+            <FontAwesomeIcon icon={["far", "check"]} className="text-green-600 mr-2 text-lg" />
+            <p className="text-green-600 text-lg font-medium">Appeal Accepted</p>
+          </div>
+        </div>
+      );
+      break;
+    }
+    case AppealStatus.Reject: {
+      return (
+        <div className="flex flex-col items-center w-full py-3 bg-red-50 rounded-lg mt-4 mb-4">
+          <div className="flex items-center mt-2 mb-2">
+            <FontAwesomeIcon icon={["far", "xmark"]} className="text-red-600 mr-2 text-lg" />
+            <p className="text-red-600 text-lg font-medium">Appeal Rejected</p>
+          </div>
+        </div>
+      );
+      break;
+    }
+    case AppealStatus.Pending: {
+      return (
+        <div className="flex flex-col items-center w-full py-3 bg-yellow-50 rounded-lg mt-4 mb-4">
+          <div className="flex items-center mt-2 mb-2">
+            <FontAwesomeIcon icon={["far", "clock"]} className="text-yellow-600 mr-2 text-lg" />
+            <p className="text-yellow-600 text-lg font-medium">Pending Appeal...</p>
+          </div>
+        </div>
+      );
+      break;
+    }
+    default: {
+      return (
+        <div>
+          <p className="text-lg">Error: AppealStatus Undefined in appealDetails.tsx</p>
+        </div>
+      );
+      break;
+    }
+  }
+}
 
 type IconProps = {
   name: String;
@@ -89,10 +142,11 @@ function MessagingTab({ messageList }: MessagingTabProps) {
   );
 }
 
-function CodeComparisonTab() {
+type CodeComparisonTabProps = {};
+
+function CodeComparisonTab({}: CodeComparisonTabProps) {
   return (
     <div>
-      <p>Code Comparison Tab</p>
       <ReactGhLikeDiff
         options={{
           originalFileName: "Original Submission",
@@ -106,10 +160,11 @@ function CodeComparisonTab() {
 
 type AppealDetailsProps = {
   assignmentId: number;
+  appealResult: AppealStatus;
   messageList: Message[];
 };
 
-function AppealDetails({ assignmentId, messageList }: AppealDetailsProps) {
+function AppealDetails({ assignmentId, appealResult, messageList }: AppealDetailsProps) {
   return (
     <LayoutProvider>
       <Layout title="Grade Appeal Details">
@@ -123,6 +178,7 @@ function AppealDetails({ assignmentId, messageList }: AppealDetailsProps) {
               </a>
             </Link>
             <h1 className="font-semibold text-2xl text-center">Grade Appeal</h1>
+            <AppealResult appealResult={appealResult} />
             <div className="p-2 flex-1 space-y-2 overflow-y-auto">
               <Tab.Group>
                 <Tab.List className="mt-3 px-6 flex gap-6 text-sm border-b w-full">
@@ -172,11 +228,12 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   const userId = parseInt(req.cookies.user);
   const assignmentId = parseInt(query.assignmentId as string);
 
-  // TODO(BRYAN): Retrieve the names from server once it's updated
+  // TODO(BRYAN): Retrieve the data from server once it's updated
+  let appealResult = AppealStatus.Accept;
   const messageList: Message[] = [
     {
       id: 1,
-      name: "Bryan Lo Kwok Yan",
+      name: "Lo Kwok Yan",
       type: "Student",
       time: "14 Nov 2022, 18:11",
       content: "Hi TA, I want to submit a grade appeal.",
@@ -193,6 +250,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   return {
     props: {
       assignmentId,
+      appealResult,
       messageList,
     },
   };
