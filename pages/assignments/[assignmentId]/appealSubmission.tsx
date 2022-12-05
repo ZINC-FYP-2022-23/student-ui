@@ -50,12 +50,11 @@ function Button() {
 }
 
 type AppealAcceptProps = {
-  assignmentId: number;
   numAppealsLeft: number;
   condition: Condition;
 };
 
-function AppealAccept({ assignmentId, numAppealsLeft, condition }: AppealAcceptProps) {
+function AppealAccept({ numAppealsLeft, condition }: AppealAcceptProps) {
   const [comments, setComments] = useState("");
 
   return (
@@ -127,11 +126,10 @@ function AppealAccept({ assignmentId, numAppealsLeft, condition }: AppealAcceptP
 }
 
 type AppealRejectProps = {
-  assignmentId: number;
   message: String;
 };
 
-function AppealReject({ assignmentId, message }: AppealRejectProps) {
+function AppealReject({ message }: AppealRejectProps) {
   return (
     <div>
       <div className="my-6 mt-8 flex flex-col items-center self-center mb-4">
@@ -200,9 +198,9 @@ function AppealSubmission({ assignmentId, numAppealsLeft, condition }: GradeAppe
               </a>
             </Link>
             {acceptAppeal ? (
-              <AppealAccept assignmentId={assignmentId} numAppealsLeft={numAppealsLeft} condition={condition} />
+              <AppealAccept numAppealsLeft={numAppealsLeft} condition={condition} />
             ) : (
-              <AppealReject assignmentId={assignmentId} message={errorMessage} />
+              <AppealReject message={errorMessage} />
             )}
           </div>
         </main>

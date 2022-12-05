@@ -9,58 +9,7 @@ import React, { useState } from "react";
 import RichTextEditor from "@components/RichTextEditor";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
 import { emit } from "process";
-
-enum AppealStatus {
-  Accept,
-  Reject,
-  Pending,
-}
-
-function AppealResult({ appealResult }: { appealResult: AppealStatus }) {
-  switch (appealResult) {
-    case AppealStatus.Accept: {
-      return (
-        <div className="flex flex-col items-center w-full py-3 bg-green-50 rounded-lg mt-4 mb-4">
-          <div className="flex items-center mt-2 mb-2">
-            <FontAwesomeIcon icon={["far", "check"]} className="text-green-600 mr-2 text-lg" />
-            <p className="text-green-600 text-lg font-medium">Appeal Accepted</p>
-          </div>
-        </div>
-      );
-      break;
-    }
-    case AppealStatus.Reject: {
-      return (
-        <div className="flex flex-col items-center w-full py-3 bg-red-50 rounded-lg mt-4 mb-4">
-          <div className="flex items-center mt-2 mb-2">
-            <FontAwesomeIcon icon={["far", "xmark"]} className="text-red-600 mr-2 text-lg" />
-            <p className="text-red-600 text-lg font-medium">Appeal Rejected</p>
-          </div>
-        </div>
-      );
-      break;
-    }
-    case AppealStatus.Pending: {
-      return (
-        <div className="flex flex-col items-center w-full py-3 bg-yellow-50 rounded-lg mt-4 mb-4">
-          <div className="flex items-center mt-2 mb-2">
-            <FontAwesomeIcon icon={["far", "clock"]} className="text-yellow-600 mr-2 text-lg" />
-            <p className="text-yellow-600 text-lg font-medium">Pending Appeal...</p>
-          </div>
-        </div>
-      );
-      break;
-    }
-    default: {
-      return (
-        <div>
-          <p className="text-lg">Error: AppealStatus Undefined in appealDetails.tsx</p>
-        </div>
-      );
-      break;
-    }
-  }
-}
+import { AppealStatus, AppealResult } from "@components/Assignment/AppealResult";
 
 type IconProps = {
   name: String;
@@ -158,6 +107,38 @@ function CodeComparisonTab({}: CodeComparisonTabProps) {
   );
 }
 
+type AppealResultBoxProps = {
+  appealResult: AppealStatus;
+};
+
+function AppealResultBox({ appealResult }: AppealResultBoxProps) {
+  switch (appealResult) {
+    case AppealStatus.Accept:
+      return (
+        <div className="bg-green-50 mt-4 py-3">
+          <AppealResult appealResult={appealResult} />
+        </div>
+      );
+      break;
+
+    case AppealStatus.Reject:
+      return (
+        <div className="bg-red-50 mt-4 py-3">
+          <AppealResult appealResult={appealResult} />
+        </div>
+      );
+      break;
+
+    case AppealStatus.Pending:
+      return (
+        <div className="bg-yellow-50 mt-4 py-3">
+          <AppealResult appealResult={appealResult} />
+        </div>
+      );
+      break;
+  }
+}
+
 type AppealDetailsProps = {
   assignmentId: number;
   appealResult: AppealStatus;
@@ -178,7 +159,9 @@ function AppealDetails({ assignmentId, appealResult, messageList }: AppealDetail
               </a>
             </Link>
             <h1 className="font-semibold text-2xl text-center">Grade Appeal</h1>
-            <AppealResult appealResult={appealResult} />
+            <div className="w-full">
+              <AppealResultBox appealResult={appealResult} />
+            </div>
             <div className="p-2 flex-1 space-y-2 overflow-y-auto">
               <Tab.Group>
                 <Tab.List className="mt-3 px-6 flex gap-6 text-sm border-b w-full">
@@ -229,11 +212,11 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   const assignmentId = parseInt(query.assignmentId as string);
 
   // TODO(BRYAN): Retrieve the data from server once it's updated
-  let appealResult = AppealStatus.Accept;
+  let appealResult = AppealStatus.Pending;
   const messageList: Message[] = [
     {
       id: 1,
-      name: "Lo Kwok Yan",
+      name: "Lo Kwok Yan Bryan",
       type: "Student",
       time: "14 Nov 2022, 18:11",
       content: "Hi TA, I want to submit a grade appeal.",

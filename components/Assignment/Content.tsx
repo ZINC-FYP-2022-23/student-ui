@@ -10,6 +10,9 @@ import { SUBMISSION_SUBSCRIPTION } from "../../graphql/queries/user";
 import { SubmissionLoader } from "../SubmissionLoader";
 import Link from "next/link";
 import { AssignmentConfig, Grade, Submission as SubmissionType } from "@types";
+import { faBreadLoaf } from "@fortawesome/pro-duotone-svg-icons";
+import { AppealStatus, AppealResult } from "./AppealResult";
+import { GetServerSideProps } from "next";
 // import { Notification, SubmissionNotification } from "../Notification";
 // import toast from "react-hot-toast";
 // import { useMutation} from "@apollo/client";
@@ -155,6 +158,108 @@ function AppealGradeButton({ assignmentId, disabled }: AssignmentContentProps) {
   );
 }
 
+interface AppealContentProps {
+  assignmentId: number;
+  appealId: number;
+}
+
+function AppealDetailsButton({ assignmentId, appealId }: AppealContentProps) {
+  return (
+    <Link href={`/assignments/${assignmentId}/${appealId}/appealDetails`}>
+      <a className="px-3 py-1.5 mt-3 mb-3 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-green-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
+        <span>Check Appeal Details</span>
+      </a>
+    </Link>
+  );
+}
+
+interface GradePanelProps {
+  assignmentId: number;
+  finalGrade: Grade;
+  appealAttemptLeft: number;
+  appealId: number | null;
+  appealStatus: AppealStatus | null;
+}
+
+function GradePanel({ assignmentId, finalGrade, appealAttemptLeft, appealId, appealStatus }: GradePanelProps) {
+  let disabled = false;
+  if (appealAttemptLeft <= 0) disabled = true;
+
+  switch (appealStatus) {
+    case AppealStatus.Accept:
+      if (appealId != null) {
+        return (
+          <div className="w-full mt-4 py-3 flex flex-col items-center bg-green-50 rounded-lg">
+            <p className="text-green-800 font-medium">
+              Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
+            </p>
+            <AppealDetailsButton assignmentId={assignmentId} appealId={appealId} />
+            <AppealResult appealResult={appealStatus} />
+            <AppealGradeButton assignmentId={assignmentId} disabled={disabled} />
+            <p className="text-green-600 font-medium text-xs mt-2">Appeal Attempts Left: {appealAttemptLeft}</p>
+          </div>
+        );
+      } else {
+        return <p>Error: appealId is NULL while AppealStatus is pending</p>;
+      }
+      break;
+
+    case AppealStatus.Reject:
+      if (appealId != null) {
+        return (
+          <div className="w-full mt-4 py-3 flex flex-col items-center bg-red-50 rounded-lg">
+            <p className="text-red-800 font-medium">
+              Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
+            </p>
+            <AppealDetailsButton assignmentId={assignmentId} appealId={appealId} />
+            <AppealResult appealResult={appealStatus} />
+            <AppealGradeButton assignmentId={assignmentId} disabled={disabled} />
+            <p className="text-red-600 font-medium text-xs mt-2">Appeal Attempts Left: {appealAttemptLeft}</p>
+          </div>
+        );
+      } else {
+        return <p>Error: appealId is NULL while AppealStatus is pending</p>;
+      }
+      break;
+
+    case AppealStatus.Pending:
+      if (appealId != null) {
+        return (
+          <div className="w-full mt-4 py-3 flex flex-col items-center bg-yellow-50 rounded-lg">
+            <p className="text-yellow-800 font-medium">
+              Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
+            </p>
+            <AppealDetailsButton assignmentId={assignmentId} appealId={appealId} />
+            <AppealResult appealResult={appealStatus} />
+          </div>
+        );
+      } else {
+        return <p>Error: appealId is NULL while AppealStatus is pending</p>;
+      }
+      break;
+
+    case null:
+      return (
+        <div className="w-full mt-4 py-3 flex flex-col items-center bg-green-50 rounded-lg">
+          <p className="text-green-800 font-medium">
+            Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
+          </p>
+          <AppealGradeButton assignmentId={assignmentId} disabled={disabled} />
+          <p className="text-green-600 font-medium text-xs mt-2">Appeal Attempts Left: {appealAttemptLeft}</p>
+        </div>
+      );
+      break;
+
+    default:
+      return (
+        <div>
+          <p>Error: Appeal Status is undefined!</p>
+        </div>
+      );
+      break;
+  }
+}
+
 export function AssignmentContent({ content }: { content: AssignmentConfig }) {
   const assignmentCreatedDate = new Date(content.createdAt);
   assignmentCreatedDate.setTime(assignmentCreatedDate.getTime() + 8 * 60 * 60 * 1000);
@@ -166,60 +271,63 @@ export function AssignmentContent({ content }: { content: AssignmentConfig }) {
     },
   });
   let finalGrade: Grade | null = null;
+
   if (data && data.submissions.length > 0 && data.submissions[0].reports.length > 0) {
     finalGrade = data.submissions[0].reports[0].grade;
   }
 
-  // TODO(Bryan): Get the number of Appeal Attempt Left from the Database after it's been updated
+  // TODO(Bryan): Get the following data from the Database after it's been update
+  const appealStatus = AppealStatus.Reject;
+  const appealId = 2;
   const appealAttemptLeft = 1;
-  let disabled = false;
-  if (appealAttemptLeft <= 0) disabled = true;
 
   return (
     <div className="flex-1 overflow-y-auto">
       <div>
-        {/* <div className="flex items-center justify-between py-4 px-6 bg-gray-100">
-          <div className="flex items-center space-x-6">
-            <Link href={content.assignment.course.website}>
-              <a
-                target="_blank"
-                aria-label="Visit Course Website"
+        <div>
+          {/* <div className="flex items-center justify-between py-4 px-6 bg-gray-100">
+            <div className="flex items-center space-x-6">
+              <Link href={content.assignment.course.website}>
+                <a
+                  target="_blank"
+                  aria-label="Visit Course Website"
+                  data-flow="right"
+                  className="h-10 w-10 flex justify-center items-center rounded-full text-gray-500 hover:text-gray-600 focus:bg-gray-300 focus:outline-none transition duration-150 ease-in-out">
+                  <label htmlFor="download" className="sr-only">Visit Course Website</label>
+                  <FontAwesomeIcon icon={['fad', 'browser']} size="lg"/>
+                </a>
+              </Link>
+              <button
+                aria-label="View Teaching Staff"
                 data-flow="right"
                 className="h-10 w-10 flex justify-center items-center rounded-full text-gray-500 hover:text-gray-600 focus:bg-gray-300 focus:outline-none transition duration-150 ease-in-out">
-                <label htmlFor="download" className="sr-only">Visit Course Website</label>
-                <FontAwesomeIcon icon={['fad', 'browser']} size="lg"/>
-              </a>
-            </Link>
-            <button
-              aria-label="View Teaching Staff"
-              data-flow="right"
-              className="h-10 w-10 flex justify-center items-center rounded-full text-gray-500 hover:text-gray-600 focus:bg-gray-300 focus:outline-none transition duration-150 ease-in-out">
-              <label htmlFor="download" className="sr-only">View Teaching Staffs</label>
-              <FontAwesomeIcon icon={['fad', 'users']} size="lg"/>
-            </button>
-            <button className="h-10 w-10 flex justify-center items-center rounded-full text-gray-500 hover:text-gray-600 focus:bg-gray-300 focus:outline-none transition duration-150 ease-in-out">
-              <label htmlFor="download" className="sr-only">List of files</label>
-              <FontAwesomeIcon icon={['fad', 'folder-tree']} size="lg"/>
-            </button>
-            <button 
-              aria-label="Download Skeleton Code"
-              data-flow="right"
-              className="h-10 w-10 flex justify-center items-center rounded-full text-gray-500 hover:text-gray-600 focus:bg-gray-300 focus:outline-none transition duration-150 ease-in-out">
-              <label htmlFor="download" className="sr-only">Download Skeleton Code</label>
-              <FontAwesomeIcon icon={['fad', 'folder-download']} size="lg"/>
-            </button>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button className="flex justify-center items-center text-gray-500 w-8 h-8 rounded-full focus:bg-gray-300 focus:outline-none hover:text-gray-600 transition duration-150 ease-in-out">
-              <label htmlFor="download" className="sr-only">Download Skeleton Code</label>
-              <FontAwesomeIcon icon={['far', 'angle-up']} size="lg"/>
-            </button>
-            <button className="flex justify-center items-center text-gray-500 w-8 h-8 rounded-full focus:bg-gray-300 focus:outline-none hover:text-gray-600 transition duration-150 ease-in-out">
-              <label htmlFor="download" className="sr-only">Download Skeleton Code</label>
-              <FontAwesomeIcon icon={['far', 'angle-down']} size="lg"/>
-            </button>
-          </div>
-        </div> */}
+                <label htmlFor="download" className="sr-only">View Teaching Staffs</label>
+                <FontAwesomeIcon icon={['fad', 'users']} size="lg"/>
+              </button>
+              <button className="h-10 w-10 flex justify-center items-center rounded-full text-gray-500 hover:text-gray-600 focus:bg-gray-300 focus:outline-none transition duration-150 ease-in-out">
+                <label htmlFor="download" className="sr-only">List of files</label>
+                <FontAwesomeIcon icon={['fad', 'folder-tree']} size="lg"/>
+              </button>
+              <button 
+                aria-label="Download Skeleton Code"
+                data-flow="right"
+                className="h-10 w-10 flex justify-center items-center rounded-full text-gray-500 hover:text-gray-600 focus:bg-gray-300 focus:outline-none transition duration-150 ease-in-out">
+                <label htmlFor="download" className="sr-only">Download Skeleton Code</label>
+                <FontAwesomeIcon icon={['fad', 'folder-download']} size="lg"/>
+              </button>
+            </div>
+            <div className="flex items-center space-x-4">
+              <button className="flex justify-center items-center text-gray-500 w-8 h-8 rounded-full focus:bg-gray-300 focus:outline-none hover:text-gray-600 transition duration-150 ease-in-out">
+                <label htmlFor="download" className="sr-only">Download Skeleton Code</label>
+                <FontAwesomeIcon icon={['far', 'angle-up']} size="lg"/>
+              </button>
+              <button className="flex justify-center items-center text-gray-500 w-8 h-8 rounded-full focus:bg-gray-300 focus:outline-none hover:text-gray-600 transition duration-150 ease-in-out">
+                <label htmlFor="download" className="sr-only">Download Skeleton Code</label>
+                <FontAwesomeIcon icon={['far', 'angle-down']} size="lg"/>
+              </button>
+            </div>
+          </div> */}
+        </div>
         <ul className="my-6">
           <li>
             <div className="flex flex-col items-center p-6 border bg-white mt-5 mx-5 rounded-lg overflow-y-scroll">
@@ -237,13 +345,13 @@ export function AssignmentContent({ content }: { content: AssignmentConfig }) {
                 isOpen={content.openForSubmission}
               />
               {finalGrade && (
-                <div className="w-full mt-4 py-3 flex flex-col items-center bg-green-50 rounded-lg">
-                  <p className="text-green-800 font-medium">
-                    Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
-                  </p>
-                  <AppealGradeButton assignmentId={content.id} disabled={disabled} />
-                  <p className="text-green-600 font-medium text-xs mt-2">Appeal Attempts Left: {appealAttemptLeft}</p>
-                </div>
+                <GradePanel
+                  assignmentId={content.id}
+                  finalGrade={finalGrade}
+                  appealAttemptLeft={appealAttemptLeft}
+                  appealId={appealId}
+                  appealStatus={appealStatus}
+                />
               )}
             </div>
           </li>
