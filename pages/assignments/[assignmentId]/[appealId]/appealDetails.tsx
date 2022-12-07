@@ -10,6 +10,7 @@ import RichTextEditor from "@components/RichTextEditor";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
 import { emit } from "process";
 import { AppealStatus, AppealResult } from "@components/Assignment/AppealResult";
+import { Alert } from "@mantine/core";
 
 type IconProps = {
   name: String;
@@ -94,6 +95,8 @@ function MessagingTab({ messageList }: MessagingTabProps) {
 type CodeComparisonTabProps = {};
 
 function CodeComparisonTab({}: CodeComparisonTabProps) {
+  const { stdioTestCase } = useLayoutState();
+
   return (
     <div>
       <ReactGhLikeDiff
@@ -102,6 +105,8 @@ function CodeComparisonTab({}: CodeComparisonTabProps) {
           updatedFileName: "New Submission",
           outputFormat: "side-by-side",
         }}
+        // TODO(Bryan): Fix diffString error
+        //diffString={stdioTestCase.diff.join("\n")}
       />
     </div>
   );
@@ -141,11 +146,12 @@ function AppealResultBox({ appealResult }: AppealResultBoxProps) {
 
 type AppealDetailsProps = {
   assignmentId: number;
+  appealSubmitted: boolean;
   appealResult: AppealStatus;
   messageList: Message[];
 };
 
-function AppealDetails({ assignmentId, appealResult, messageList }: AppealDetailsProps) {
+function AppealDetails({ assignmentId, appealSubmitted, appealResult, messageList }: AppealDetailsProps) {
   return (
     <LayoutProvider>
       <Layout title="Grade Appeal Details">
@@ -158,48 +164,65 @@ function AppealDetails({ assignmentId, appealResult, messageList }: AppealDetail
                 Back
               </a>
             </Link>
-            <h1 className="font-semibold text-2xl text-center">Grade Appeal</h1>
-            <div className="w-full">
-              <AppealResultBox appealResult={appealResult} />
-            </div>
-            <div className="p-2 flex-1 space-y-2 overflow-y-auto">
-              <Tab.Group>
-                <Tab.List className="mt-3 px-6 flex gap-6 text-sm border-b w-full">
-                  <Tab
-                    className={({ selected }) =>
-                      `pb-3 px-1 border-b-2 font-medium text-sm leading-5 focus:outline-none transition ${
-                        selected
-                          ? "border-cse-500 text-cse-600"
-                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                      }`
-                    }
+            {appealSubmitted ? (
+              <div>
+                <h1 className="font-semibold text-2xl text-center">Grade Appeal</h1>
+                <div className="w-full">
+                  <AppealResultBox appealResult={appealResult} />
+                </div>
+                <div className="p-2 flex-1 space-y-2 overflow-y-auto">
+                  <Tab.Group>
+                    <Tab.List className="mt-3 px-6 flex gap-6 text-sm border-b w-full">
+                      <Tab
+                        className={({ selected }) =>
+                          `pb-3 px-1 border-b-2 font-medium text-sm leading-5 focus:outline-none transition ${
+                            selected
+                              ? "border-cse-500 text-cse-600"
+                              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                          }`
+                        }
+                      >
+                        Messaging
+                      </Tab>
+                      <Tab
+                        className={({ selected }) =>
+                          `pb-3 px-1 border-b-2 font-medium text-sm leading-5 focus:outline-none transition ${
+                            selected
+                              ? "border-cse-500 text-cse-600"
+                              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                          }`
+                        }
+                      >
+                        Code Comparison
+                      </Tab>
+                    </Tab.List>
+                    <Tab.Panels>
+                      {/* "Messaging" tab panel */}
+                      <Tab.Panel>
+                        <MessagingTab messageList={messageList} />
+                      </Tab.Panel>
+                      {/* "Code Comparison" tab panel */}
+                      <Tab.Panel>
+                        <CodeComparisonTab />
+                      </Tab.Panel>
+                    </Tab.Panels>
+                  </Tab.Group>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="my-6 mt-8 flex flex-col items-center self-center mb-4">
+                  <Alert
+                    icon={<FontAwesomeIcon icon={["far", "circle-exclamation"]} />}
+                    title="Appeal Unavailable"
+                    color="red"
+                    variant="filled"
                   >
-                    Messaging
-                  </Tab>
-                  <Tab
-                    className={({ selected }) =>
-                      `pb-3 px-1 border-b-2 font-medium text-sm leading-5 focus:outline-none transition ${
-                        selected
-                          ? "border-cse-500 text-cse-600"
-                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                      }`
-                    }
-                  >
-                    Code Comparison
-                  </Tab>
-                </Tab.List>
-                <Tab.Panels>
-                  {/* "Messaging" tab panel */}
-                  <Tab.Panel>
-                    <MessagingTab messageList={messageList} />
-                  </Tab.Panel>
-                  {/* "Code Comparison" tab panel */}
-                  <Tab.Panel>
-                    <CodeComparisonTab />
-                  </Tab.Panel>
-                </Tab.Panels>
-              </Tab.Group>
-            </div>
+                    {"You have not submitted an appeal."}
+                  </Alert>
+                </div>
+              </div>
+            )}
           </div>
         </main>
       </Layout>
@@ -212,7 +235,8 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   const assignmentId = parseInt(query.assignmentId as string);
 
   // TODO(BRYAN): Retrieve the data from server once it's updated
-  let appealResult = AppealStatus.Pending;
+  const appealResult = AppealStatus.Pending;
+  const appealSubmitted = true;
   const messageList: Message[] = [
     {
       id: 1,
@@ -233,6 +257,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   return {
     props: {
       assignmentId,
+      appealSubmitted,
       appealResult,
       messageList,
     },
