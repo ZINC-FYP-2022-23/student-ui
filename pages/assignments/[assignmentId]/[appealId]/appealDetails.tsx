@@ -69,7 +69,14 @@ function MessagingTab({ messageList }: MessagingTabProps) {
 
   return (
     <div className="flex flex-col space-y-2">
-      <div className="content-end mb-2">
+      <div className="space-y-4">
+        {messageList.map((message: Message) => (
+          <div key={message.id}>
+            <SingleMessage message={message} />
+          </div>
+        ))}
+      </div>
+      <div className="mb-6 sticky bottom-0 object-bottom">
         {/* @ts-ignore */}
         <RichTextEditor
           id="rte"
@@ -80,13 +87,6 @@ function MessagingTab({ messageList }: MessagingTabProps) {
             ["h1", "h2", "h3", "unorderedList", "orderedList"],
           ]}
         />
-      </div>
-      <div className="space-y-4">
-        {messageList.map((message: Message) => (
-          <div key={message.id}>
-            <SingleMessage message={message} />
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -155,7 +155,7 @@ function AppealDetails({ assignmentId, appealSubmitted, appealResult, messageLis
   return (
     <LayoutProvider>
       <Layout title="Grade Appeal Details">
-        <main className="flex-1 flex bg-gray-200">
+        <main className="flex-1 flex bg-gray-200 overflow-y-auto">
           <AssignmentSection />
           <div className="p-5 flex flex-1 flex-col h-full w-max">
             <Link href={`/assignments/${assignmentId}`}>
@@ -170,7 +170,7 @@ function AppealDetails({ assignmentId, appealSubmitted, appealResult, messageLis
                 <div className="w-full">
                   <AppealResultBox appealResult={appealResult} />
                 </div>
-                <div className="p-2 flex-1 space-y-2 overflow-y-auto">
+                <div className="p-2 flex-1 space-y-2">
                   <Tab.Group>
                     <Tab.List className="mt-3 px-6 flex gap-6 text-sm border-b w-full">
                       <Tab
@@ -210,17 +210,15 @@ function AppealDetails({ assignmentId, appealSubmitted, appealResult, messageLis
                 </div>
               </div>
             ) : (
-              <div>
-                <div className="my-6 mt-8 flex flex-col items-center self-center mb-4">
-                  <Alert
-                    icon={<FontAwesomeIcon icon={["far", "circle-exclamation"]} />}
-                    title="Appeal Unavailable"
-                    color="red"
-                    variant="filled"
-                  >
-                    {"You have not submitted an appeal."}
-                  </Alert>
-                </div>
+              <div className="my-6 mt-8 flex flex-col items-center self-center mb-4">
+                <Alert
+                  icon={<FontAwesomeIcon icon={["far", "circle-exclamation"]} />}
+                  title="Appeal Unavailable"
+                  color="red"
+                  variant="filled"
+                >
+                  {"You have not submitted an appeal."}
+                </Alert>
               </div>
             )}
           </div>
@@ -237,6 +235,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   // TODO(BRYAN): Retrieve the data from server once it's updated
   const appealResult = AppealStatus.Pending;
   const appealSubmitted = true;
+
   const messageList: Message[] = [
     {
       id: 1,
@@ -251,6 +250,34 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
       type: "Teaching Assistant",
       time: "15 Nov 2022, 20:59",
       content: "Dear Bryan, Nice to Meet You!",
+    },
+    {
+      id: 3,
+      name: "Lo Kwok Yan Bryan",
+      type: "Student",
+      time: "14 Nov 2022, 18:11",
+      content: "Hi TA, I want to submit a grade appeal.",
+    },
+    {
+      id: 4,
+      name: "Gilbert Chan",
+      type: "Teaching Assistant",
+      time: "15 Nov 2022, 20:59",
+      content: "Okie, chekcing!",
+    },
+    {
+      id: 5,
+      name: "Lo Kwok Yan Bryan",
+      type: "Student",
+      time: "14 Nov 2022, 18:11",
+      content: "Thank you.",
+    },
+    {
+      id: 6,
+      name: "Gilbert Chan",
+      type: "Teaching Assistant",
+      time: "15 Nov 2022, 20:59",
+      content: "Still in process!",
     },
   ];
 
