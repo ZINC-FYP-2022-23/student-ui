@@ -9,7 +9,7 @@ import { useSubscription } from "@apollo/client";
 import { SUBMISSION_SUBSCRIPTION } from "../../graphql/queries/user";
 import { SubmissionLoader } from "../SubmissionLoader";
 import Link from "next/link";
-import { AssignmentConfig, Grade, Submission as SubmissionType } from "@types";
+import { AssignmentConfig, Grade, Submission as SubmissionType } from "@/types";
 import { faBreadLoaf } from "@fortawesome/pro-duotone-svg-icons";
 import { AppealStatus, AppealResult } from "./AppealResult";
 import { GetServerSideProps } from "next";
