@@ -8,7 +8,7 @@ import { useLayoutDispatch } from "../../contexts/layout";
 import { useSubscription } from "@apollo/client";
 import { SUBMISSION_SUBSCRIPTION } from "../../graphql/queries/user";
 import { SubmissionLoader } from "../SubmissionLoader";
-import { AssignmentConfig } from "@types";
+import { AssignmentConfig } from "@/types";
 // import { Notification, SubmissionNotification } from "../Notification";
 // import toast from "react-hot-toast";
 // import { useMutation} from "@apollo/client";
