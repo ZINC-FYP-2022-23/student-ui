@@ -1,16 +1,17 @@
-import { LayoutProvider, useLayoutState } from "../../../../contexts/layout";
-import { Layout } from "../../../../layout";
-import { AssignmentSection } from "../../../../components/Assignment/List";
+import { LayoutProvider, useLayoutState } from "@/contexts/layout";
+import { Layout } from "@/layout";
+import { AssignmentSection } from "@/components/Assignment/List";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { GetServerSideProps } from "next";
 import { Tab } from "@headlessui/react";
 import React, { useState } from "react";
-import RichTextEditor from "@components/RichTextEditor";
+import RichTextEditor from "@/components/RichTextEditor";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
 import { emit } from "process";
-import { AppealStatus, AppealResult } from "@components/Assignment/AppealResult";
+import { AppealResult } from "@/components/Assignment/AppealResult";
 import { Alert } from "@mantine/core";
+import { AppealStatus, AppealAttempt } from "@/types/appeal";
 
 type IconProps = {
   name: String;
@@ -147,11 +148,12 @@ function AppealResultBox({ appealResult }: AppealResultBoxProps) {
 type AppealDetailsProps = {
   assignmentId: number;
   appealSubmitted: boolean;
+  allowAccess: boolean;
   appealResult: AppealStatus;
   messageList: Message[];
 };
 
-function AppealDetails({ assignmentId, appealSubmitted, appealResult, messageList }: AppealDetailsProps) {
+function AppealDetails({ assignmentId, appealSubmitted, allowAccess, appealResult, messageList }: AppealDetailsProps) {
   return (
     <LayoutProvider>
       <Layout title="Grade Appeal Details">
@@ -164,7 +166,7 @@ function AppealDetails({ assignmentId, appealSubmitted, appealResult, messageLis
                 Back
               </a>
             </Link>
-            {appealSubmitted ? (
+            {appealSubmitted && allowAccess ? (
               <div>
                 <h1 className="font-semibold text-2xl text-center">Grade Appeal</h1>
                 <div className="w-full">
@@ -217,7 +219,11 @@ function AppealDetails({ assignmentId, appealSubmitted, appealResult, messageLis
                   color="red"
                   variant="filled"
                 >
-                  {"You have not submitted an appeal."}
+                  {!appealSubmitted
+                    ? "You have not submitted an appeal."
+                    : !allowAccess
+                    ? "You do not have access to this appeal."
+                    : "Unknown Error."}
                 </Alert>
               </div>
             )}
@@ -233,8 +239,16 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   const assignmentId = parseInt(query.assignmentId as string);
 
   // TODO(BRYAN): Retrieve the data from server once it's updated
-  const appealResult = AppealStatus.Pending;
-  const appealSubmitted = true;
+  const appealResult: AppealStatus = AppealStatus.Pending;
+  const appeal: AppealAttempt | null = {
+    id: 1,
+    submissionId: 999,
+    createdAt: new Date("2022-12-20"),
+    latestStatus: AppealStatus.Reject,
+    changeLog: [],
+    decisionTimestamp: new Date("2022-12-21"),
+  };
+  const appealUserID: number = userId;
 
   const messageList: Message[] = [
     {
@@ -280,12 +294,30 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
       content: "Still in process!",
     },
   ];
+  // End of Data Retrieval
+
+  // Check if appeal is non-null
+  let appealSubmitted: boolean;
+  if (appeal !== null) {
+    appealSubmitted = true;
+  } else {
+    appealSubmitted = false;
+  }
+
+  // Check if the student has access to the appeal
+  let allowAccess: boolean;
+  if (appealUserID === userId) {
+    allowAccess = true;
+  } else {
+    allowAccess = false;
+  }
 
   return {
     props: {
       assignmentId,
+      allowAccess,
       appealSubmitted,
-      appealResult,
+      appealResult: appeal?.latestStatus,
       messageList,
     },
   };

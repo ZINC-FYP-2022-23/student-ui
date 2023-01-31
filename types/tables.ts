@@ -156,7 +156,7 @@ export type Submission = {
   assignment_config: AssignmentConfig;
   assignment_config_id: number;
   checksum: string;
-  created_at: string;
+  created_at: Date;
   extracted_path: string | null;
   fail_reason: string | null;
   id: number;
@@ -165,7 +165,7 @@ export type Submission = {
   reports: Report[];
   size: number;
   stored_name: string;
-  updatedAt: string;
+  updatedAt: Date;
   upload_name: string;
   user: User;
   user_id: number;

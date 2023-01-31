@@ -1,10 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-
-export enum AppealStatus {
-  Accept,
-  Reject,
-  Pending,
-}
+import { AppealStatus } from "../../types/appeal";
 
 export function AppealResult({ appealResult }: { appealResult: AppealStatus }) {
   switch (appealResult) {

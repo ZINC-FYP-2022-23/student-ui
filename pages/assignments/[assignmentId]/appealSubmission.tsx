@@ -1,20 +1,19 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { AssignmentSection } from "@/components/Assignment/List";
+import RichTextEditor from "@/components/RichTextEditor";
+import { LayoutProvider } from "@/contexts/layout";
+import { GET_APPEAL_DETAIL } from "@/graphql/queries/user";
+import { Layout } from "@/layout";
+import { initializeApollo } from "@/lib/apollo";
+import { Submission } from "@/types";
+import { AppealAttempt, AppealStatus } from "@/types/appeal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { fad } from "@fortawesome/pro-duotone-svg-icons";
 import { far } from "@fortawesome/pro-regular-svg-icons";
-import { GetServerSideProps } from "next";
-import React, { useState } from "react";
-import Link from "next/link";
-import RichTextEditor from "@components/RichTextEditor";
-
-import { LayoutProvider } from "../../../contexts/layout";
-import { Layout } from "../../../layout";
-import { AssignmentSection } from "../../../components/Assignment/List";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "@mantine/core";
-import { GET_APPEAL_DETAIL } from "../../../graphql/queries/user";
-
-import { Submission } from "../../../types";
-import { initializeApollo } from "@lib/apollo";
+import { GetServerSideProps } from "next";
+import Link from "next/link";
+import { useState } from "react";
 
 library.add(fad, far);
 
@@ -33,14 +32,26 @@ enum Condition {
   NotFullMark,
 }
 
-function Button() {
+function Button({ comments }: { comments: string }) {
   return (
     <div>
       <button
         className="px-4 py-1 rounded-md text-lg bg-green-500 text-white hover:bg-green-600 active:bg-green-700 transition ease-in-out duration-150"
         onClick={() => {
-          // TODO(Bryan): Submit the appeal
-          // TODO(Bryan): Validate whether "Justification and comments" is filled
+          if (comments === null || comments === "") {
+            alert("Please Fill All Required Field");
+          } else {
+            // TODO(Bryan): Submit the appeal
+            const now = new Date();
+
+            const appeal: AppealAttempt = {
+              id: 1,
+              submissionId: 999,
+              createdAt: now,
+              latestStatus: AppealStatus.Pending,
+              changeLog: [],
+            };
+          }
         }}
       >
         Submit
@@ -115,10 +126,10 @@ function AppealAccept({ numAppealsLeft, condition }: AppealAcceptProps) {
                 Your have got Full Mark. Are you sure you wish to submit a grade appeal?
               </p>
             </div>
-            <Button />
+            <Button comments={comments} />
           </div>
         ) : (
-          <Button />
+          <Button comments={comments} />
         )}
       </div>
     </div>
