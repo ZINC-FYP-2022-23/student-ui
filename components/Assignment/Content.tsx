@@ -9,10 +9,10 @@ import { useSubscription } from "@apollo/client";
 import { SUBMISSION_SUBSCRIPTION } from "../../graphql/queries/user";
 import { SubmissionLoader } from "../SubmissionLoader";
 import Link from "next/link";
-import { AssignmentConfig, Grade, Submission as SubmissionType } from "@/types";
-import { faBreadLoaf } from "@fortawesome/pro-duotone-svg-icons";
-import { AppealStatus, AppealResult } from "./AppealResult";
-import { GetServerSideProps } from "next";
+import { AssignmentConfig, Grade, Submission as SubmissionType } from "@/types/tables";
+import { AppealResult } from "./AppealResult";
+import { AppealLogMessage } from "../AppealLogMessage";
+import { AppealStatus, AppealAttempt, AppealLog, isAppealLog, ChangeLogTypes } from "@/types/appeal";
 // import { Notification, SubmissionNotification } from "../Notification";
 // import toast from "react-hot-toast";
 // import { useMutation} from "@apollo/client";
@@ -260,6 +260,121 @@ function GradePanel({ assignmentId, finalGrade, appealAttemptLeft, appealId, app
   }
 }
 
+function TransformToAppealLog(appeals: AppealAttempt[]) {
+  let appealLog: AppealLog[] = [];
+  let log: AppealLog;
+
+  appeals.forEach((appeal) => {
+    appealLog.push({
+      id: appeal.id,
+      type: "APPEAL_SUBMISSION",
+      date: appeal.createdAt,
+    });
+
+    appeal.changeLog.forEach((changeLog) => {
+      let updatedStatus: AppealStatus | string;
+      if (changeLog.updatedState === "[{'status':ACCEPTED}]") {
+        updatedStatus = AppealStatus.Accept;
+      } else if (changeLog.updatedState === "[{'status':REJECTED}]") {
+        updatedStatus = AppealStatus.Reject;
+      } else if (changeLog.updatedState === "[{'status':PENDING}]") {
+        updatedStatus = AppealStatus.Pending;
+      } else {
+        updatedStatus = changeLog.updatedState;
+      }
+
+      appealLog.push({
+        id: changeLog.id,
+        type: changeLog.type,
+        date: changeLog.createdAt,
+        updatedState: updatedStatus,
+      });
+    });
+  });
+
+  console.log(appealLog);
+  appealLog = appealLog.sort((a, b) => {
+    if (a.date > b.date) {
+      return -1;
+    } else if (a.date < b.date) {
+      return 1;
+    } else {
+      return 0;
+    }
+  });
+  console.log(appealLog);
+
+  return appealLog;
+}
+
+interface SortMessageProps {
+  submissions: SubmissionType[] | null;
+  appealLog: AppealLog[] | null;
+}
+
+function SortMessage({ submissions, appealLog }: SortMessageProps) {
+  // Return null if there are no logs
+  if (
+    (submissions === null && appealLog === null) ||
+    (submissions === null && appealLog && appealLog.length <= 0) ||
+    (submissions && submissions.length <= 0 && appealLog === null) ||
+    (submissions && submissions.length <= 0 && appealLog && appealLog.length <= 0)
+  ) {
+    return null;
+  }
+
+  // Return list of `SubmissionType[]` if appealLog if null
+  if (submissions && submissions.length > 0 && (appealLog === null || (appealLog && appealLog.length <= 0))) {
+    return submissions;
+  }
+
+  // Return list of `AppealAttempt[]` if submissions if null
+  if (appealLog && appealLog.length > 0 && (submissions === null || (submissions && submissions.length <= 0))) {
+    return appealLog;
+  }
+
+  // Return list of `SubmissionType[]` and `AppealAttempt[]` ordered based on their `createdAt` date from newest to oldest
+  if (submissions && appealLog && submissions.length > 0 && appealLog.length > 0) {
+    let message: (SubmissionType | AppealLog)[] = [];
+
+    let submissionsIndex = 0;
+    let appealLogIndex = 0;
+
+    for (let i = 0; i < submissions.length + appealLog.length; i++) {
+      // If submissions has no more items, append the rest of the appealLog and return
+      if (submissionsIndex >= submissions.length) {
+        for (; appealLogIndex < appealLog.length; appealLogIndex++) {
+          message = message.concat(appealLog[appealLogIndex]);
+        }
+        return message;
+      }
+
+      // If appealLog has no more items, append the rest of the submissions and return
+      if (appealLogIndex >= appealLog.length) {
+        for (; submissionsIndex < submissions.length; submissionsIndex++) {
+          message = message.concat(submissions[submissionsIndex]);
+        }
+        return message;
+      }
+
+      // Compare the next item in appealLog and submissions, and append the one with oldest created date
+      const storedSubmittedDate = new Date(submissions[submissionsIndex].created_at);
+      const storedAppealDate = new Date(appealLog[appealLogIndex].date);
+      if (storedSubmittedDate >= storedAppealDate) {
+        message = message.concat(submissions[submissionsIndex]);
+        submissionsIndex++;
+      } else if (storedSubmittedDate < storedAppealDate) {
+        message = message.concat(appealLog[appealLogIndex]);
+        appealLogIndex++;
+      }
+    }
+
+    return message;
+  }
+
+  return null;
+}
+
 export function AssignmentContent({ content }: { content: AssignmentConfig }) {
   const assignmentCreatedDate = new Date(content.createdAt);
   assignmentCreatedDate.setTime(assignmentCreatedDate.getTime() + 8 * 60 * 60 * 1000);
@@ -270,6 +385,7 @@ export function AssignmentContent({ content }: { content: AssignmentConfig }) {
       assignmentConfigId: content.id,
     },
   });
+
   let finalGrade: Grade | null = null;
 
   if (data && data.submissions.length > 0 && data.submissions[0].reports.length > 0) {
@@ -280,6 +396,49 @@ export function AssignmentContent({ content }: { content: AssignmentConfig }) {
   const appealStatus = AppealStatus.Reject;
   const appealId = 2;
   const appealAttemptLeft = 1;
+  const appealAttempts: AppealAttempt[] = [
+    {
+      id: 1001,
+      submissionId: 999,
+      createdAt: new Date("2023-9-22"),
+      latestStatus: AppealStatus.Reject,
+      changeLog: [
+        {
+          id: 2001,
+          createdAt: new Date("2023-11-22"),
+          type: ChangeLogTypes.APPEAL_STATUS,
+          originalState: "[{'status':PENDING}]",
+          updatedState: "[{'status':REJECTED}]",
+          initiatedBy: 2,
+        },
+        {
+          id: 2002,
+          createdAt: new Date("2023-11-23"),
+          type: ChangeLogTypes.APPEAL_STATUS,
+          originalState: "[{'status':REJECTED}]",
+          updatedState: "[{'status':ACCEPTED}]",
+          initiatedBy: 2,
+        },
+      ],
+      decisionTimestamp: new Date("2023-12-23"),
+    },
+    {
+      id: 1002,
+      submissionId: 999,
+      createdAt: new Date("2023-10-20"),
+      latestStatus: AppealStatus.Accept,
+      changeLog: [],
+      decisionTimestamp: new Date("2023-12-21"),
+    },
+  ];
+  // END OF TODO
+
+  let log: AppealLog[] = TransformToAppealLog(appealAttempts);
+
+  let message: (SubmissionType | AppealLog)[] | null = SortMessage({
+    submissions: data?.submissions || null,
+    appealLog: log || null,
+  });
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -356,7 +515,14 @@ export function AssignmentContent({ content }: { content: AssignmentConfig }) {
             </div>
           </li>
           {loading && <SubmissionLoader />}
-          {data && data.submissions.map((submission) => <Submission key={submission.id} submission={submission} />)}
+          {message &&
+            message.map((log) => {
+              if (isAppealLog(log)) {
+                return <AppealLogMessage key={log.id} log={log} />;
+              } else {
+                return <Submission key={log.id} submission={log} />;
+              }
+            })}
         </ul>
       </div>
     </div>

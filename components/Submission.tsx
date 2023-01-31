@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Report } from "./Report/index";
-import { Submission as SubmissionType } from "@types";
+import { Submission as SubmissionType } from "types";
 
 export function Submission({ submission }: { submission: SubmissionType }) {
   const now = new Date();
