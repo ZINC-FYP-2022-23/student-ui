@@ -9,7 +9,7 @@ import React, { useState } from "react";
 import RichTextEditor from "@/components/RichTextEditor";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
 import { emit } from "process";
-import { AppealResult } from "@/components/Assignment/AppealResult";
+import { AppealResult } from "@/components/Appeal/AppealResult";
 import { Alert } from "@mantine/core";
 import { AppealStatus, AppealAttempt } from "@/types/appeal";
 

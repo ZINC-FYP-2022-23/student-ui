@@ -10,8 +10,8 @@ import { SUBMISSION_SUBSCRIPTION } from "../../graphql/queries/user";
 import { SubmissionLoader } from "../SubmissionLoader";
 import Link from "next/link";
 import { AssignmentConfig, Grade, Submission as SubmissionType } from "@/types/tables";
-import { AppealResult } from "./AppealResult";
-import { AppealLogMessage } from "../AppealLogMessage";
+import { AppealResult } from "../Appeal/AppealResult";
+import { AppealLogMessage } from "../Appeal/AppealLogMessage";
 import { AppealStatus, AppealAttempt, AppealLog, ChangeLogTypes } from "@/types/appeal";
 import { isAppealLog } from "@/utils/appealUtils";
 // import { Notification, SubmissionNotification } from "../Notification";
@@ -38,6 +38,7 @@ function AssignmentSubmission({ submissionClosed, configId, isOpen }) {
         submitFile(files)
           .then(async ({ status }: any) => {
             if (status === "success") {
+              /* 
               // start
               // console.log(id)
               //add data in database
@@ -66,7 +67,8 @@ function AssignmentSubmission({ submissionClosed, configId, isOpen }) {
               // })
               // end
 
-              // if success
+              // if success 
+              */
               dispatch({
                 type: "showNotification",
                 payload: {
@@ -159,14 +161,9 @@ function AppealGradeButton({ assignmentId, disabled }: AssignmentContentProps) {
   );
 }
 
-interface AppealContentProps {
-  assignmentId: number;
-  appealId: number;
-}
-
-function AppealDetailsButton({ assignmentId, appealId }: AppealContentProps) {
+function AppealDetailsButton({ appealId }: { appealId: number }) {
   return (
-    <Link href={`/assignments/${assignmentId}/${appealId}/appealDetails`}>
+    <Link href={`/appeals/${appealId}`}>
       <a className="px-3 py-1.5 mt-3 mb-3 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-green-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
         <span>Check Appeal Details</span>
       </a>
@@ -194,7 +191,7 @@ function GradePanel({ assignmentId, finalGrade, appealAttemptLeft, appealId, app
             <p className="text-green-800 font-medium">
               Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
             </p>
-            <AppealDetailsButton assignmentId={assignmentId} appealId={appealId} />
+            <AppealDetailsButton appealId={appealId} />
             <AppealResult appealResult={appealStatus} />
             <AppealGradeButton assignmentId={assignmentId} disabled={disabled} />
             <p className="text-green-600 font-medium text-xs mt-2">Appeal Attempts Left: {appealAttemptLeft}</p>
@@ -212,7 +209,7 @@ function GradePanel({ assignmentId, finalGrade, appealAttemptLeft, appealId, app
             <p className="text-red-800 font-medium">
               Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
             </p>
-            <AppealDetailsButton assignmentId={assignmentId} appealId={appealId} />
+            <AppealDetailsButton appealId={appealId} />
             <AppealResult appealResult={appealStatus} />
             <AppealGradeButton assignmentId={assignmentId} disabled={disabled} />
             <p className="text-red-600 font-medium text-xs mt-2">Appeal Attempts Left: {appealAttemptLeft}</p>
@@ -230,7 +227,7 @@ function GradePanel({ assignmentId, finalGrade, appealAttemptLeft, appealId, app
             <p className="text-yellow-800 font-medium">
               Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
             </p>
-            <AppealDetailsButton assignmentId={assignmentId} appealId={appealId} />
+            <AppealDetailsButton appealId={appealId} />
             <AppealResult appealResult={appealStatus} />
           </div>
         );
@@ -293,7 +290,6 @@ function TransformToAppealLog(appeals: AppealAttempt[]) {
     });
   });
 
-  console.log(appealLog);
   appealLog = appealLog.sort((a, b) => {
     if (a.date > b.date) {
       return -1;
@@ -303,7 +299,6 @@ function TransformToAppealLog(appeals: AppealAttempt[]) {
       return 0;
     }
   });
-  console.log(appealLog);
 
   return appealLog;
 }

@@ -1,7 +1,7 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { AppealLog, AppealStatus, ChangeLogTypes } from "../types/appeal";
+import { AppealLog, AppealStatus, ChangeLogTypes } from "../../types/appeal";
 
 export function AppealLogMessage({ log }: { log: AppealLog }) {
   const router = useRouter();
@@ -35,7 +35,7 @@ export function AppealLogMessage({ log }: { log: AppealLog }) {
             </p>
           </div>
           <span className="inline-flex rounded-md shadow-sm">
-            <Link href={`/${assignmentConfigId}/${log.id}`}>
+            <Link href={`/appeals/${log.id}`}>
               <a className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
                 View Appeal
               </a>
