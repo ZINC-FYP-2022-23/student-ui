@@ -9,11 +9,10 @@ export enum AppealStatus {
 export type AppealAttempt = {
   id: number;
   newFileSubmissionId?: string;
-  submissionId: number;
-  createdAt: Date;
+  assignmentConfigAndUserId: number;
+  createdAt: string;
   latestStatus: AppealStatus;
-  changeLog: ChangeLog[];
-  decisionTimestamp?: Date;
+  updatedAt: string;
 };
 
 export type AppealMessage = {
@@ -27,7 +26,7 @@ export type AppealMessage = {
 
 export type ChangeLog = {
   id: number;
-  createdAt: Date;
+  createdAt: string;
   type: ChangeLogTypes;
   originalState: string;
   updatedState: string;
@@ -47,6 +46,15 @@ export enum ChangeLogTypes {
 export type AppealLog = {
   id: number;
   type: ChangeLogTypes | "APPEAL_SUBMISSION";
-  date: Date;
+  date: string;
+  originalState?: string;
   updatedState?: string;
+};
+
+export type DisplayMessageType = {
+  id: number;
+  content: string;
+  name: string;
+  type: "Student" | "Teaching Assistant";
+  time: string;
 };

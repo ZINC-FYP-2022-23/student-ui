@@ -1,81 +1,57 @@
+import { AppealLogMessage } from "@/components/Appeal/AppealLogMessage";
+import { AppealResult } from "@/components/Appeal/AppealResult";
+import { AppealTextMessage } from "@/components/Appeal/AppealTextMessage";
+import { AssignmentSection } from "@/components/Assignment/List";
+import RichTextEditor from "@/components/RichTextEditor";
 import { LayoutProvider, useLayoutState } from "@/contexts/layout";
 import { Layout } from "@/layout";
-import { AssignmentSection } from "@/components/Assignment/List";
-import Link from "next/link";
+import {
+  AppealAttempt,
+  AppealLog,
+  AppealMessage,
+  AppealStatus,
+  ChangeLog,
+  ChangeLogTypes,
+  DisplayMessageType,
+} from "@/types/appeal";
+import { Submission as SubmissionType } from "@/types/tables";
+import { transformToAppealLog, sort } from "@/utils/appealUtils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { GetServerSideProps } from "next";
 import { Tab } from "@headlessui/react";
-import React, { useState } from "react";
-import RichTextEditor from "@/components/RichTextEditor";
-import { ReactGhLikeDiff } from "react-gh-like-diff";
-import { emit } from "process";
-import { AppealResult } from "@/components/Appeal/AppealResult";
 import { Alert } from "@mantine/core";
-import { AppealStatus, AppealAttempt } from "@/types/appeal";
+import { GetServerSideProps } from "next";
+import Link from "next/link";
+import { useState } from "react";
+import { ReactGhLikeDiff } from "react-gh-like-diff";
 
-type IconProps = {
-  name: String;
-  type: "Student" | "Teaching Assistant";
+type ActivityLogTabProps = {
+  activityLogList: (
+    | (SubmissionType & { _type: "submission" })
+    | (DisplayMessageType & { _type: "appealMessage" })
+    | (AppealLog & { _type: "appealLog" })
+  )[];
 };
 
-function Icon({ name, type }: IconProps) {
-  let backgroundColor: string;
-  switch (type) {
-    case "Student":
-      backgroundColor = "bg-blue-700";
-      break;
-    case "Teaching Assistant":
-      backgroundColor = "bg-red-800";
-      break;
-    default:
-      backgroundColor = "bg-gray-800";
-  }
-
-  const css = "w-10 h-10 leading-10 rounded-full text-white font-bold text-lg text-center " + backgroundColor;
-  return <div className={css}>{name.charAt(0)}</div>;
-}
-
-type Message = {
-  id: number;
-  name: String;
-  type: "Student" | "Teaching Assistant";
-  content: String;
-  time: String;
-};
-
-function SingleMessage({ message }: { message: Message }) {
-  const { name, type, time, content } = message;
-
-  return (
-    <div className="flex flex-row space-x-2">
-      <Icon name={name} type={type} />
-      <div className="overflow-x-auto">
-        <div className="flex flex-row space-x-2">
-          <p className="font-bold text-lg">{name}</p>
-          <p className="text-gray-500">({type})</p>
-          <p className="text-green-700">{time}</p>
-        </div>
-        <p>{message.content}</p>
-      </div>
-    </div>
-  );
-}
-
-type MessagingTabProps = {
-  messageList: Message[];
-};
-
-function MessagingTab({ messageList }: MessagingTabProps) {
+function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
   const [comments, setComments] = useState("");
 
   return (
     <div className="flex flex-col space-y-2">
-      <div className="space-y-4">
-        {messageList.map((message: Message) => (
-          <div key={message.id}>
-            <SingleMessage message={message} />
-          </div>
-        ))}
+      <div>
+        {activityLogList.map(
+          (
+            log:
+              | (SubmissionType & { _type: "submission" })
+              | (DisplayMessageType & { _type: "appealMessage" })
+              | (AppealLog & { _type: "appealLog" }),
+          ) => {
+            if (log._type === "appealLog") {
+              return <AppealLogMessage key={log.id} log={log} showButton={false} />;
+            } else if (log._type === "appealMessage") {
+              return <AppealTextMessage key={log.id} message={log} />;
+            }
+          },
+        )}
       </div>
       <div className="mb-6 sticky bottom-0 object-bottom">
         {/* @ts-ignore */}
@@ -150,10 +126,20 @@ type AppealDetailsProps = {
   appealSubmitted: boolean;
   allowAccess: boolean;
   appealResult: AppealStatus;
-  messageList: Message[];
+  activityLogList: (
+    | (SubmissionType & { _type: "submission" })
+    | (DisplayMessageType & { _type: "appealMessage" })
+    | (AppealLog & { _type: "appealLog" })
+  )[];
 };
 
-function AppealDetails({ assignmentId, appealSubmitted, allowAccess, appealResult, messageList }: AppealDetailsProps) {
+function AppealDetails({
+  assignmentId,
+  appealSubmitted,
+  allowAccess,
+  appealResult,
+  activityLogList,
+}: AppealDetailsProps) {
   return (
     <LayoutProvider>
       <Layout title="Grade Appeal Details">
@@ -184,7 +170,7 @@ function AppealDetails({ assignmentId, appealSubmitted, allowAccess, appealResul
                           }`
                         }
                       >
-                        Messaging
+                        Activity Log
                       </Tab>
                       <Tab
                         className={({ selected }) =>
@@ -201,7 +187,7 @@ function AppealDetails({ assignmentId, appealSubmitted, allowAccess, appealResul
                     <Tab.Panels>
                       {/* "Messaging" tab panel */}
                       <Tab.Panel>
-                        <MessagingTab messageList={messageList} />
+                        <ActivityLogTab activityLogList={activityLogList} />
                       </Tab.Panel>
                       {/* "Code Comparison" tab panel */}
                       <Tab.Panel>
@@ -242,15 +228,13 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   const appealResult: AppealStatus = AppealStatus.Pending;
   const appeal: AppealAttempt | null = {
     id: 1,
-    submissionId: 999,
-    createdAt: new Date("2022-12-20"),
+    assignmentConfigAndUserId: 999,
+    createdAt: "2022-12-20",
     latestStatus: AppealStatus.Reject,
-    changeLog: [],
-    decisionTimestamp: new Date("2022-12-21"),
+    updatedAt: "2022-12-21",
   };
   const appealUserID: number = userId;
-
-  const messageList: Message[] = [
+  const messageList: DisplayMessageType[] = [
     {
       id: 1,
       name: "Lo Kwok Yan Bryan",
@@ -294,23 +278,78 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
       content: "Still in process!",
     },
   ];
+  const appealAttempts: AppealAttempt[] = [
+    {
+      id: 1001,
+      assignmentConfigAndUserId: 999,
+      createdAt: "2022-11-13",
+      latestStatus: AppealStatus.Reject,
+      updatedAt: "2022-11-14",
+    },
+    {
+      id: 1002,
+      assignmentConfigAndUserId: 999,
+      createdAt: "2022-11-15",
+      latestStatus: AppealStatus.Accept,
+      updatedAt: "2022-11-16",
+    },
+  ];
+  const changeLogList: ChangeLog[] = [
+    {
+      id: 2001,
+      createdAt: "2022-11-14",
+      type: ChangeLogTypes.APPEAL_STATUS,
+      originalState: "[{'status':PENDING}]",
+      updatedState: "[{'status':REJECTED}]",
+      initiatedBy: 2,
+    },
+    {
+      id: 2002,
+      createdAt: "2022-11-15",
+      type: ChangeLogTypes.APPEAL_STATUS,
+      originalState: "[{'status':REJECTED}]",
+      updatedState: "[{'status':ACCEPTED}]",
+      initiatedBy: 2,
+    },
+    {
+      id: 2003,
+      createdAt: "2022-11-16",
+      type: ChangeLogTypes.SCORE,
+      originalState: "[{'score':80}]",
+      updatedState: "[{'score':100}]",
+      initiatedBy: 2,
+    },
+    {
+      id: 2004,
+      createdAt: "2022-11-17",
+      type: ChangeLogTypes.SUBMISSION,
+      originalState: "[{'submission':'old'}]",
+      updatedState: "[{'submission':'new'}]",
+      initiatedBy: 2,
+    },
+  ];
   // End of Data Retrieval
+
+  let log: AppealLog[] = transformToAppealLog({ appeals: appealAttempts, changeLog: changeLogList });
+
+  let activityLogList: (
+    | (SubmissionType & { _type: "submission" })
+    | (DisplayMessageType & { _type: "appealMessage" })
+    | (AppealLog & { _type: "appealLog" })
+  )[] = sort({
+    messages: messageList,
+    appealLog: log,
+  });
 
   // Check if appeal is non-null
   let appealSubmitted: boolean;
-  if (appeal !== null) {
-    appealSubmitted = true;
-  } else {
-    appealSubmitted = false;
-  }
+  if (appeal !== null) appealSubmitted = true;
+  else appealSubmitted = false;
 
   // Check if the student has access to the appeal
   let allowAccess: boolean;
-  if (appealUserID === userId) {
-    allowAccess = true;
-  } else {
-    allowAccess = false;
-  }
+  if (appealUserID === userId) allowAccess = true;
+  else allowAccess = false;
 
   return {
     props: {
@@ -318,7 +357,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
       allowAccess,
       appealSubmitted,
       appealResult: appeal?.latestStatus,
-      messageList,
+      activityLogList,
     },
   };
 };
