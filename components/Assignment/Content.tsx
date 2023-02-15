@@ -19,6 +19,12 @@ import { isAppealLog, isDisplayMessageType, sort, transformToAppealLog } from "@
 // import { useMutation} from "@apollo/client";
 // import { UPDATE_SUBMISSION_NOTI } from "../../graphql/mutations/user";
 
+/**
+ * Returns a component of the file submission area, where students can drag-and-drop their files to be submitted.
+ * @param {boolean} isOpen - Is the submission opened yet.
+ * @param {boolean} submissionClosed - Is the submission closed already.
+ * @param {number} configId - Configuration ID
+ */
 function AssignmentSubmission({ submissionClosed, configId, isOpen }) {
   const { user, submitFile } = useZinc();
   // const [updateSubmissionNoti] = useMutation(UPDATE_SUBMISSION_NOTI)
@@ -136,12 +142,17 @@ function AssignmentSubmission({ submissionClosed, configId, isOpen }) {
   }
 }
 
-interface AssignmentContentProps {
+interface AssignmentGradeButtonProps {
   assignmentId: number;
   disabled: boolean;
 }
 
-function AppealGradeButton({ assignmentId, disabled }: AssignmentContentProps) {
+/**
+ * Returns the button that directs to the Appeal Submission page.
+ * @param {number} assignmentId
+ * @param {boolean} disabled - Is the button disabled.
+ */
+function AppealGradeButton({ assignmentId, disabled }: AssignmentGradeButtonProps) {
   if (disabled) {
     return (
       <button
@@ -161,6 +172,10 @@ function AppealGradeButton({ assignmentId, disabled }: AssignmentContentProps) {
   );
 }
 
+/**
+ * Returns the button that directs to the Appeal Details page of a submitted appeal.
+ * @param {number} appealId
+ */
 function AppealDetailsButton({ appealId }: { appealId: number }) {
   return (
     <Link href={`/appeals/${appealId}`}>
@@ -179,6 +194,14 @@ interface GradePanelProps {
   appealStatus: AppealStatus | null;
 }
 
+/**
+ * Returns a component of a box that shows the Final Grade and Appeal Status (if any)
+ * @param {number} assignmentId
+ * @param {Grade} finalGrade - Final grade of the assignment submission
+ * @param {number} appealAttemptLeft - Number of appeals attempt that can be made left
+ * @param {number} [appealId]
+ * @param {AppealStatus} [appealStatus] - Latest status of the submitted appeal (if any)
+ */
 function GradePanel({ assignmentId, finalGrade, appealAttemptLeft, appealId, appealStatus }: GradePanelProps) {
   let disabled = false;
   if (appealAttemptLeft <= 0) disabled = true;
@@ -258,6 +281,10 @@ function GradePanel({ assignmentId, finalGrade, appealAttemptLeft, appealId, app
   }
 }
 
+/**
+ * Returns a component that show the core content of the assignment page
+ * @param {AssignmentConfig} content - Assignment the page is showing
+ */
 export function AssignmentContent({ content }: { content: AssignmentConfig }) {
   const assignmentCreatedDate = new Date(content.createdAt);
   assignmentCreatedDate.setTime(assignmentCreatedDate.getTime() + 8 * 60 * 60 * 1000);
@@ -329,7 +356,7 @@ export function AssignmentContent({ content }: { content: AssignmentConfig }) {
   return (
     <div className="flex-1 overflow-y-auto">
       <div>
-        <div>
+        <>
           {/* <div className="flex items-center justify-between py-4 px-6 bg-gray-100">
             <div className="flex items-center space-x-6">
               <Link href={content.assignment.course.website}>
@@ -372,7 +399,7 @@ export function AssignmentContent({ content }: { content: AssignmentConfig }) {
               </button>
             </div>
           </div> */}
-        </div>
+        </>
         <ul className="my-6">
           <li>
             <div className="flex flex-col items-center p-6 border bg-white mt-5 mx-5 rounded-lg overflow-y-scroll">

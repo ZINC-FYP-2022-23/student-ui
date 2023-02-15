@@ -1,3 +1,7 @@
+/**
+ * @file Types for appeal-related components and pages.
+ */
+
 // Common types used in both console and student-ui
 export enum AppealStatus {
   Accept = "Accepted",

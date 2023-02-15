@@ -10,14 +10,29 @@ import {
 } from "@/types/appeal";
 import { DataResult } from "@remix-run/router/dist/utils";
 
+/**
+ * Check if an object is `AppealLog` type
+ * @param {any} obj - The object to be checked
+ * @returns {boolean}
+ */
 export function isAppealLog(obj: any): obj is AppealLog {
   return "id" in obj && "type" in obj && "date" in obj;
 }
 
+/**
+ * Check if an object is `DisplayMessageType` type
+ * @param {any} obj - The object to be checked
+ * @returns {boolean}
+ */
 export function isDisplayMessageType(obj: any): obj is DisplayMessageType {
   return "id" in obj && "content" in obj && "name" in obj && "type" in obj && "time" in obj;
 }
 
+/**
+ * Check if an object is `AppealMessage` type
+ * @param {*} obj - The object to be checked
+ * @returns {boolean}
+ */
 export function isAppealMessage(obj: any): obj is AppealMessage {
   return (
     "id" in obj && "message" in obj && "createdAt" in obj && "senderId" in obj && "attemptId" in obj && "isRead" in obj
@@ -30,6 +45,13 @@ interface sortProps {
   appealLog: AppealLog[];
 }
 
+/**
+ * This combines 2~3 lists and sort them from newest to oldest
+ * @param {SubmissionType[]} [submissions] - A list of submission-related logs
+ * @param {DisplayMessageType[]} [messages] - A list of appeal messages
+ * @param {AppealLog[]} appealLog - A list of appeal-related logs
+ * @returns A list that also specifies each item's type
+ */
 export function sort({ submissions, messages, appealLog }: sortProps) {
   let allLog: (
     | (SubmissionType & { _type: "submission" })
@@ -73,6 +95,12 @@ interface transformStateType {
   state: string;
 }
 
+/**
+ * Transforms a JSON string
+ * @param {ChangeLogTypes | "APPEAL_SUBMISSION"} type - Type of the log
+ * @param {string} [state] - JSON string to be transformed
+ * @returns {AppealStatus | string} - The new transformed state
+ */
 function transformState({ type, state }: transformStateType) {
   if (type === ChangeLogTypes.APPEAL_STATUS) {
     if (state === "[{'status':ACCEPTED}]") {
@@ -103,6 +131,12 @@ interface transformToAppealLogProps {
   changeLog: ChangeLog[];
 }
 
+/**
+ * Transforms and merges a list of `AppealAttempt` and `ChangeLog` into one list of `AppealLog`
+ * @param {AppealAttempt[]} appeals - List of appeal attempts
+ * @param {ChangeLog[]} changeLog - List of change logs related to appeals
+ * @returns {AppealLog[]} - List of transformed and merged appeal logs, ordered from newest to oldest
+ */
 export function transformToAppealLog({ appeals, changeLog }: transformToAppealLogProps): AppealLog[] {
   let appealLog: AppealLog[] = [];
   let log: AppealLog;

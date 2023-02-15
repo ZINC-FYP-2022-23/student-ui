@@ -5,17 +5,10 @@ import { AssignmentSection } from "@/components/Assignment/List";
 import RichTextEditor from "@/components/RichTextEditor";
 import { LayoutProvider, useLayoutState } from "@/contexts/layout";
 import { Layout } from "@/layout";
-import {
-  AppealAttempt,
-  AppealLog,
-  AppealMessage,
-  AppealStatus,
-  ChangeLog,
-  ChangeLogTypes,
-  DisplayMessageType,
-} from "@/types/appeal";
+import { AppealLog, AppealStatus, DisplayMessageType } from "@/types/appeal";
 import { Submission as SubmissionType } from "@/types/tables";
-import { transformToAppealLog, sort } from "@/utils/appealUtils";
+import { sort, transformToAppealLog } from "@/utils/appealUtils";
+import { appeal, appealAttempts, changeLogList, messageList } from "@/utils/dummyData";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Tab } from "@headlessui/react";
 import { Alert } from "@mantine/core";
@@ -32,6 +25,14 @@ type ActivityLogTabProps = {
   )[];
 };
 
+/**
+ * Return a component that shows the Activity Log under the Activity Log Tab to show all appeal messages and appeal logs
+ * @param {
+ *  | ((SubmissionType & { _type: "submission" })
+ *  | (DisplayMessageType & { _type: "appealMessage" })
+ *  | (AppealLog & { _type: "appealLog" }))[]
+ * } activityLogList - A list of logs that may include appeal messages and appeal logs
+ */
 function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
   const [comments, setComments] = useState("");
 
@@ -71,6 +72,9 @@ function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
 
 type CodeComparisonTabProps = {};
 
+/**
+ * Show the difference between new and old file submissions under the Code Comparison Tab by using ReactGhLikeDiff
+ */
 function CodeComparisonTab({}: CodeComparisonTabProps) {
   const { stdioTestCase } = useLayoutState();
 
@@ -82,7 +86,7 @@ function CodeComparisonTab({}: CodeComparisonTabProps) {
           updatedFileName: "New Submission",
           outputFormat: "side-by-side",
         }}
-        // TODO(Bryan): Fix diffString error
+        // TODO(ANSON): Fix diffString error
         //diffString={stdioTestCase.diff.join("\n")}
       />
     </div>
@@ -93,6 +97,10 @@ type AppealResultBoxProps = {
   appealResult: AppealStatus;
 };
 
+/**
+ * Returns the component that shows the latest appeal status at the top of the page
+ * @param {AppealStatus} appealResult - The latest appeal status
+ */
 function AppealResultBox({ appealResult }: AppealResultBoxProps) {
   switch (appealResult) {
     case AppealStatus.Accept:
@@ -133,6 +141,18 @@ type AppealDetailsProps = {
   )[];
 };
 
+/**
+ * Returns the entire Appeal Details page
+ * @param {number}  assignmentId - The assignment ID that the appeal is related to
+ * @param {boolean} appealSubmitted - Is the appeal ID valid
+ * @param {boolean} allowAccess - Is the student allowed to access the appeal
+ * @param {AppealStatus}  appealResult - The latest appeal status
+ * @param {
+ *  | ((SubmissionType & { _type: "submission" })
+ *  | (DisplayMessageType & { _type: "appealMessage" })
+ *  | (AppealLog & { _type: "appealLog" }))[]
+ * } activityLogList - A list of log that includes appeal messages and appeal logs
+ */
 function AppealDetails({
   assignmentId,
   appealSubmitted,
@@ -225,110 +245,9 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   const assignmentId = parseInt(query.assignmentId as string);
 
   // TODO(BRYAN): Retrieve the data from server once it's updated
-  const appealResult: AppealStatus = AppealStatus.Pending;
-  const appeal: AppealAttempt | null = {
-    id: 1,
-    assignmentConfigAndUserId: 999,
-    createdAt: "2022-12-20",
-    latestStatus: AppealStatus.Reject,
-    updatedAt: "2022-12-21",
-  };
-  const appealUserID: number = userId;
-  const messageList: DisplayMessageType[] = [
-    {
-      id: 1,
-      name: "Lo Kwok Yan Bryan",
-      type: "Student",
-      time: "14 Nov 2022, 18:11",
-      content: "Hi TA, I want to submit a grade appeal.",
-    },
-    {
-      id: 2,
-      name: "Gilbert Chan",
-      type: "Teaching Assistant",
-      time: "15 Nov 2022, 20:59",
-      content: "Dear Bryan, Nice to Meet You!",
-    },
-    {
-      id: 3,
-      name: "Lo Kwok Yan Bryan",
-      type: "Student",
-      time: "14 Nov 2022, 18:11",
-      content: "Hi TA, I want to submit a grade appeal.",
-    },
-    {
-      id: 4,
-      name: "Gilbert Chan",
-      type: "Teaching Assistant",
-      time: "15 Nov 2022, 20:59",
-      content: "Okie, chekcing!",
-    },
-    {
-      id: 5,
-      name: "Lo Kwok Yan Bryan",
-      type: "Student",
-      time: "14 Nov 2022, 18:11",
-      content: "Thank you.",
-    },
-    {
-      id: 6,
-      name: "Gilbert Chan",
-      type: "Teaching Assistant",
-      time: "15 Nov 2022, 20:59",
-      content: "Still in process!",
-    },
-  ];
-  const appealAttempts: AppealAttempt[] = [
-    {
-      id: 1001,
-      assignmentConfigAndUserId: 999,
-      createdAt: "2022-11-13",
-      latestStatus: AppealStatus.Reject,
-      updatedAt: "2022-11-14",
-    },
-    {
-      id: 1002,
-      assignmentConfigAndUserId: 999,
-      createdAt: "2022-11-15",
-      latestStatus: AppealStatus.Accept,
-      updatedAt: "2022-11-16",
-    },
-  ];
-  const changeLogList: ChangeLog[] = [
-    {
-      id: 2001,
-      createdAt: "2022-11-14",
-      type: ChangeLogTypes.APPEAL_STATUS,
-      originalState: "[{'status':PENDING}]",
-      updatedState: "[{'status':REJECTED}]",
-      initiatedBy: 2,
-    },
-    {
-      id: 2002,
-      createdAt: "2022-11-15",
-      type: ChangeLogTypes.APPEAL_STATUS,
-      originalState: "[{'status':REJECTED}]",
-      updatedState: "[{'status':ACCEPTED}]",
-      initiatedBy: 2,
-    },
-    {
-      id: 2003,
-      createdAt: "2022-11-16",
-      type: ChangeLogTypes.SCORE,
-      originalState: "[{'score':80}]",
-      updatedState: "[{'score':100}]",
-      initiatedBy: 2,
-    },
-    {
-      id: 2004,
-      createdAt: "2022-11-17",
-      type: ChangeLogTypes.SUBMISSION,
-      originalState: "[{'submission':'old'}]",
-      updatedState: "[{'submission':'new'}]",
-      initiatedBy: 2,
-    },
-  ];
-  // End of Data Retrieval
+  //The data to be retrieved: appeal, appealAttempts, changeLogList, messageList
+
+  const appealUserID: number = userId; // Used for checking if the userID matches
 
   let log: AppealLog[] = transformToAppealLog({ appeals: appealAttempts, changeLog: changeLogList });
 

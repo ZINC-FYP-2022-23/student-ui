@@ -8,6 +8,11 @@ interface AppealLogMessageType {
   showButton: boolean;
 }
 
+/**
+ * Returns a component that shows a log message based on the log type
+ * @param {AppealLog} log - Log to be displayed
+ * @param {boolean} showButton - Is the "View Appeal" button going to be shown
+ */
 export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
   const router = useRouter();
   const assignmentConfigId = parseInt(router.query.assignmentConfigId as string, 10);
@@ -16,6 +21,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
   const logDate = new Date(log.date);
   logDate.setTime(logDate.getTime() + 8 * 60 * 60 * 1000);
 
+  // Log component for `APPEAL_SUBMISSION`-related log
   if (log.type === "APPEAL_SUBMISSION") {
     return (
       <>
@@ -50,6 +56,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
     );
   }
 
+  // Log component for `APPEAL_STATUS`-related log
   if (log.type === ChangeLogTypes.APPEAL_STATUS && log.updatedState) {
     return (
       <>
@@ -97,6 +104,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
     );
   }
 
+  // Log component for `SCORE`-related log
   if (log.type === ChangeLogTypes.SCORE && log.updatedState) {
     return (
       <>
@@ -148,6 +156,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
     );
   }
 
+  // Log component for `SUBMISSION`-related log
   if (log.type === ChangeLogTypes.SUBMISSION) {
     return (
       <>
@@ -198,7 +207,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
     );
   }
 
-  // Display Error Log
+  // Error for unidentified log
   return (
     <li className="list-none">
       <div className="mx-12 h-12 border-l-2"></div>

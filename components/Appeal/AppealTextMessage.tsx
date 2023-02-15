@@ -1,10 +1,15 @@
 import { DisplayMessageType } from "@/types/appeal";
 
 type IconProps = {
-  name: String;
+  name: string;
   type: "Student" | "Teaching Assistant";
 };
 
+/**
+ * Returns a circular Icon representing the user
+ * @param {string} name - User name
+ * @param {"Student" | "Teaching Assistant"} type - User type
+ */
 function Icon({ name, type }: IconProps) {
   let backgroundColor: string;
   switch (type) {
@@ -22,6 +27,10 @@ function Icon({ name, type }: IconProps) {
   return <div className={css}>{name.charAt(0)}</div>;
 }
 
+/**
+ * Returns a component of a line of Text Message
+ * @param {DisplayMessageType} message - Appeal Text Message
+ */
 export function AppealTextMessage({ message }: { message: DisplayMessageType }) {
   const { name, type, time, content } = message;
 
