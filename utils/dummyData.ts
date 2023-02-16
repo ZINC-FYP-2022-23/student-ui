@@ -111,3 +111,55 @@ export const changeLogList: ChangeLog[] = [
     initiatedBy: 2,
   },
 ];
+
+/**
+ * Dummy data for diff-ing the original submission and the new appeal submission.
+ */
+export const multiFileDiff = `
+diff --git a/old/main.cpp b/new/main.cpp
+index 5bdc00b..6a8f136 100644
+--- a/old/main.cpp
++++ b/new/main.cpp
+@@ -4,15 +4,12 @@ using namespace std;
+ 
+ #include "sum.h"
+ 
+-// Usually TA writes their own main.cpp file
+-// while student submits sums.cpp for the class implementation
+-
+ int main(int argc, char* argv[])
+ {
+   int x = atoi(argv[1]);
+-  int y = atoi(argv[2]);
++  int z = atoi(argv[2]);
+ 
+-  TwoSum* twoSum = new TwoSum(x, y);
++  TwoSum* twoSum = new TwoSum(x, z);
+   cout << twoSum->add() << endl;
+   return 0;
+ }
+diff --git a/old/sum.cpp b/new/sum.cpp
+index b04092d..11ad3bc 100644
+--- a/old/sum.cpp
++++ b/new/sum.cpp
+@@ -1,5 +1,5 @@
+ #include "sum.h"
+-using namespace std;
++#include <iostream>
+ 
+ TwoSum::TwoSum(int x, int y) {
+   first_num = x;
+@@ -7,6 +7,11 @@ TwoSum::TwoSum(int x, int y) {
+ }
+ 
+ int TwoSum::add() {
+-  return first_num + second_num;
++  return first_num - second_num;
+ }
+ 
++int main() {
++  TwoSum sum(1, 2);
++  std::cout << sum.add() << std::endl;
++  return 0;
++}
+`;
