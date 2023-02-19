@@ -8,13 +8,14 @@ import { Layout } from "@/layout";
 import { AppealLog, AppealStatus, DisplayMessageType } from "@/types/appeal";
 import { Submission as SubmissionType } from "@/types/tables";
 import { sort, transformToAppealLog } from "@/utils/appealUtils";
-import { appeal, appealAttempts, changeLogList, messageList, multiFileDiff } from "@/utils/dummyData";
+import { appeal, appealAttempts, changeLogList, messageList } from "@/utils/dummyData";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Tab } from "@headlessui/react";
 import { Alert, clsx, createStyles } from "@mantine/core";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
-import { useState } from "react";
+import { DiffSubmissionsData } from "pages/api/appeals/diffSubmissions";
+import { useEffect, useState } from "react";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
 
 type ActivityLogTabProps = {
@@ -70,15 +71,33 @@ function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
   );
 }
 
-type CodeComparisonTabProps = {};
+type CodeComparisonTabProps = {
+  diffData: DiffSubmissionsData & { status?: number };
+};
 
 /**
  * Show the difference between new and old file submissions under the Code Comparison Tab by using ReactGhLikeDiff
  */
-function CodeComparisonTab({}: CodeComparisonTabProps) {
+function CodeComparisonTab({ diffData }: CodeComparisonTabProps) {
   const { classes } = useStyles();
-  // TODO: For the file name, instead of something like "{old -> new}/main.cpp", can we just show
-  // something like "main.cpp"?
+  const { diff, error, status } = diffData;
+
+  if (status !== 200) {
+    return (
+      <div className="mt-8 flex flex-col items-center space-y-5 text-red-500">
+        <FontAwesomeIcon icon={["far", "circle-exclamation"]} size="3x" />
+        <div className="space-y-2 text-center">
+          <p>An error occurred while comparing old and new submissions.</p>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+  if (diff === "") {
+    return (
+      <p className="mt-8 text-center text-gray-600">The new appeal submission is the same as the old submission.</p>
+    );
+  }
   return (
     <div className={clsx("relative", classes.diffView)}>
       <ReactGhLikeDiff
@@ -86,7 +105,7 @@ function CodeComparisonTab({}: CodeComparisonTabProps) {
           outputFormat: "side-by-side",
           showFiles: true,
         }}
-        diffString={multiFileDiff}
+        diffString={diff}
       />
     </div>
   );
@@ -163,6 +182,33 @@ function AppealDetails({
   appealResult,
   activityLogList,
 }: AppealDetailsProps) {
+  /** Diff data for the "Code Comparison" tab. */
+  const [diffSubmissionsData, setDiffSubmissionsData] = useState<DiffSubmissionsData & { status?: number }>({
+    diff: "",
+    error: null,
+  });
+
+  useEffect(() => {
+    // TODO(BRYAN): Obtain the submission IDs from the backend
+    const oldSubmissionId = 1;
+    const newSubmissionId = 2;
+
+    const diffSubmission = async () => {
+      try {
+        const response = await fetch(`/api/appeals/diffSubmissions?oldId=${oldSubmissionId}&newId=${newSubmissionId}`, {
+          method: "GET",
+        });
+        const { status } = response;
+        const { diff, error } = await response.json();
+        setDiffSubmissionsData({ diff, error, status });
+      } catch (error) {
+        setDiffSubmissionsData({ diff: "", status: 500, error: "An unknown error has occurred." });
+      }
+    };
+
+    diffSubmission();
+  }, []);
+
   return (
     <LayoutProvider>
       <Layout title="Grade Appeal Details">
@@ -218,7 +264,7 @@ function AppealDetails({
                     </Tab.Panel>
                     {/* "Code Comparison" tab panel */}
                     <Tab.Panel>
-                      <CodeComparisonTab />
+                      <CodeComparisonTab diffData={diffSubmissionsData} />
                     </Tab.Panel>
                   </Tab.Panels>
                 </Tab.Group>

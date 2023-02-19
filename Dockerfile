@@ -4,6 +4,8 @@ ENV PORT 3000
 WORKDIR /usr/src/app
 
 # Installing dependencies
+RUN set -ex && \
+    apk add --no-cache --virtual git
 COPY package*.json .npmrc /usr/src/app/
 RUN yarn install
 
