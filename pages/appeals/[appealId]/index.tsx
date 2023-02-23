@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
 
 type ActivityLogTabProps = {
+  /* A list of logs that may include appeal messages and appeal logs */
   activityLogList: (
     | (SubmissionType & { _type: "submission" })
     | (DisplayMessageType & { _type: "appealMessage" })
@@ -28,18 +29,13 @@ type ActivityLogTabProps = {
 
 /**
  * Return a component that shows the Activity Log under the Activity Log Tab to show all appeal messages and appeal logs
- * @param {
- *  | ((SubmissionType & { _type: "submission" })
- *  | (DisplayMessageType & { _type: "appealMessage" })
- *  | (AppealLog & { _type: "appealLog" }))[]
- * } activityLogList - A list of logs that may include appeal messages and appeal logs
  */
 function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
   const [comments, setComments] = useState("");
 
   return (
-    <div className="flex flex-col space-y-2">
-      <div>
+    <div className="flex flex-col ">
+      <>
         {activityLogList.map(
           (
             log:
@@ -48,13 +44,17 @@ function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
               | (AppealLog & { _type: "appealLog" }),
           ) => {
             if (log._type === "appealLog") {
-              return <AppealLogMessage key={log.id} log={log} showButton={false} />;
+              return (
+                <div className="px-3">
+                  <AppealLogMessage key={log.id} log={log} showButton={false} />
+                </div>
+              );
             } else if (log._type === "appealMessage") {
               return <AppealTextMessage key={log.id} message={log} />;
             }
           },
         )}
-      </div>
+      </>
       <div className="mb-6 sticky bottom-0 object-bottom">
         {/* @ts-ignore */}
         <RichTextEditor
@@ -121,12 +121,11 @@ const useStyles = createStyles(() => ({
 }));
 
 type AppealResultBoxProps = {
-  appealResult: AppealStatus;
+  appealResult: AppealStatus; // The latest appeal status
 };
 
 /**
  * Returns the component that shows the latest appeal status at the top of the page
- * @param {AppealStatus} appealResult - The latest appeal status
  */
 function AppealResultBox({ appealResult }: AppealResultBoxProps) {
   switch (appealResult) {
@@ -152,10 +151,11 @@ function AppealResultBox({ appealResult }: AppealResultBoxProps) {
 }
 
 type AppealDetailsProps = {
-  assignmentId: number;
-  appealSubmitted: boolean;
-  allowAccess: boolean;
-  appealResult: AppealStatus;
+  assignmentId: number; // The assignment ID that the appeal is related to
+  appealSubmitted: boolean; // Is the appeal ID valid
+  allowAccess: boolean; // Is the student allowed to access the appeal
+  appealResult: AppealStatus; // The latest appeal status
+  /* A list of log that includes appeal messages and appeal logs */
   activityLogList: (
     | (SubmissionType & { _type: "submission" })
     | (DisplayMessageType & { _type: "appealMessage" })
@@ -165,15 +165,6 @@ type AppealDetailsProps = {
 
 /**
  * Returns the entire Appeal Details page
- * @param {number}  assignmentId - The assignment ID that the appeal is related to
- * @param {boolean} appealSubmitted - Is the appeal ID valid
- * @param {boolean} allowAccess - Is the student allowed to access the appeal
- * @param {AppealStatus}  appealResult - The latest appeal status
- * @param {
- *  | ((SubmissionType & { _type: "submission" })
- *  | (DisplayMessageType & { _type: "appealMessage" })
- *  | (AppealLog & { _type: "appealLog" }))[]
- * } activityLogList - A list of log that includes appeal messages and appeal logs
  */
 function AppealDetails({
   assignmentId,
