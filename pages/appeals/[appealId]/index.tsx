@@ -14,9 +14,20 @@ import { Tab } from "@headlessui/react";
 import { Alert, clsx, createStyles } from "@mantine/core";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
-import { DiffSubmissionsData } from "pages/api/appeals/diffSubmissions";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
+
+/**
+ * Data returned by the webhook `/diffSubmissions` endpoint, which compares two assignment submissions.
+ */
+type DiffSubmissionsData = {
+  /** Diff output between the old submission and the new submission. */
+  diff: string;
+  /** Error message if any. */
+  error: string | null;
+  /** HTTP status of the API call. */
+  status: number;
+};
 
 type ActivityLogTabProps = {
   /* A list of logs that may include appeal messages and appeal logs */
@@ -45,8 +56,8 @@ function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
           ) => {
             if (log._type === "appealLog") {
               return (
-                <div className="px-3">
-                  <AppealLogMessage key={log.id} log={log} showButton={false} />
+                <div key={log.id} className="px-3">
+                  <AppealLogMessage log={log} showButton={false} />
                 </div>
               );
             } else if (log._type === "appealMessage") {
@@ -72,7 +83,7 @@ function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
 }
 
 type CodeComparisonTabProps = {
-  diffData: DiffSubmissionsData & { status?: number };
+  diffData: DiffSubmissionsData;
 };
 
 /**
@@ -161,6 +172,7 @@ type AppealDetailsProps = {
     | (DisplayMessageType & { _type: "appealMessage" })
     | (AppealLog & { _type: "appealLog" })
   )[];
+  diffSubmissionsData: DiffSubmissionsData;
 };
 
 /**
@@ -172,34 +184,8 @@ function AppealDetails({
   allowAccess,
   appealResult,
   activityLogList,
+  diffSubmissionsData,
 }: AppealDetailsProps) {
-  /** Diff data for the "Code Comparison" tab. */
-  const [diffSubmissionsData, setDiffSubmissionsData] = useState<DiffSubmissionsData & { status?: number }>({
-    diff: "",
-    error: null,
-  });
-
-  useEffect(() => {
-    // TODO(BRYAN): Obtain the submission IDs from the backend
-    const oldSubmissionId = 1;
-    const newSubmissionId = 2;
-
-    const diffSubmission = async () => {
-      try {
-        const response = await fetch(`/api/appeals/diffSubmissions?oldId=${oldSubmissionId}&newId=${newSubmissionId}`, {
-          method: "GET",
-        });
-        const { status } = response;
-        const { diff, error } = await response.json();
-        setDiffSubmissionsData({ diff, error, status });
-      } catch (error) {
-        setDiffSubmissionsData({ diff: "", status: 500, error: "An unknown error has occurred." });
-      }
-    };
-
-    diffSubmission();
-  }, []);
-
   return (
     <LayoutProvider>
       <Layout title="Grade Appeal Details">
@@ -313,6 +299,24 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   if (appealUserID === userId) allowAccess = true;
   else allowAccess = false;
 
+  // TODO(BRYAN): Obtain the submission IDs from the backend
+  const oldSubmissionId = 1;
+  const newSubmissionId = 2;
+  let diffSubmissionsData: DiffSubmissionsData;
+  try {
+    const response = await fetch(
+      `http://${process.env.WEBHOOK_ADDR}/diffSubmissions?oldId=${oldSubmissionId}&newId=${newSubmissionId}`,
+      {
+        method: "GET",
+      },
+    );
+    const { status } = response;
+    const { diff, error } = await response.json();
+    diffSubmissionsData = { diff, error, status };
+  } catch (error) {
+    diffSubmissionsData = { diff: "", status: 500, error: "An unknown error has occurred." };
+  }
+
   return {
     props: {
       assignmentId,
@@ -320,6 +324,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
       appealSubmitted,
       appealResult: appeal?.latestStatus,
       activityLogList,
+      diffSubmissionsData,
     },
   };
 };
