@@ -1,3 +1,4 @@
+import { StdioTestCaseReport } from "@/types/stageReport";
 import React, { useContext, useReducer, useEffect } from "react";
 // import { getMessaging, onMessage } from "firebase/messaging";
 // import { firebaseCloudMessaging } from "../lib/webpush";
@@ -19,7 +20,7 @@ interface LayoutState {
   showSlideOver: boolean;
   showNotification: boolean;
   notification?: any;
-  stdioTestCase?: any;
+  stdioTestCase?: StdioTestCaseReport;
   cache: any;
   reportId?: string;
   valgrindTestCase?: any;

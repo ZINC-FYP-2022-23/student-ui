@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useLayoutDispatch, useLayoutState } from "../../contexts/layout";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
 import { TimeoutBanner } from "../TimeoutBanner";
+import { StdioTestReport } from "@/types/stageReport";
 
 const signal = {
   1: "SIGHUP",
@@ -53,7 +54,11 @@ function StdioTestStatus({ allPassed }) {
   );
 }
 
-export function StdioTestStageReportView({ reports }) {
+interface StdioTestStageReportViewProps {
+  reports: StdioTestReport;
+}
+
+export function StdioTestStageReportView({ reports }: StdioTestStageReportViewProps) {
   const dispatch = useLayoutDispatch();
   const [viewingIndex, setViewingIndex] = useState(0);
   const [viewingTestCase, setViewingTestCase] = useState(0);
@@ -115,6 +120,8 @@ export function StdioTestDetailView() {
   const dispatch = useLayoutDispatch();
   const { stdioTestCase } = useLayoutState();
   const [viewingMode, setViewingMode] = useState("stdout");
+
+  if (!stdioTestCase) return null;
 
   if (stdioTestCase.visibility === "ALWAYS_HIDDEN") {
     return (
