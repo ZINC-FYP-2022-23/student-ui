@@ -8,7 +8,6 @@ import {
   ChangeLogTypes,
   AppealStatus,
 } from "@/types/appeal";
-import { DataResult } from "@remix-run/router/dist/utils";
 
 /**
  * Check if an object is `AppealLog` type
