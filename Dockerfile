@@ -1,11 +1,14 @@
 FROM node:lts-alpine
+ARG NPM_TOKEN
 ENV PORT 3000
+ENV NPM_TOKEN=${NPM_TOKEN}
 
 WORKDIR /usr/src/app
 
 # Installing dependencies
-COPY package*.json .npmrc /usr/src/app/
-RUN yarn install
+COPY package.json yarn.lock .npmrc /usr/src/app/
+RUN npm config set '//npm.fontawesome.com/:_authToken' "${NPM_TOKEN}"
+RUN yarn install --frozen-lockfile
 
 # Copying source files
 COPY . /usr/src/app
