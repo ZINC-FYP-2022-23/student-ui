@@ -12,8 +12,8 @@ import Link from "next/link";
 import { AssignmentConfig, Grade, Submission as SubmissionType } from "@/types/tables";
 import { AppealResult } from "../Appeal/AppealResult";
 import { AppealLogMessage } from "../Appeal/AppealLogMessage";
-import { AppealStatus, AppealAttempt, AppealLog, ChangeLogTypes, DisplayMessageType, ChangeLog } from "@/types/appeal";
-import { isAppealLog, isDisplayMessageType, sort, transformToAppealLog } from "@/utils/appealUtils";
+import { AppealAttempt, AppealStatus, AppealLog, DisplayMessageType, ChangeLog, ChangeLogTypes } from "@/types/appeal";
+import { sort, transformToAppealLog } from "@/utils/appealUtils";
 // import { Notification, SubmissionNotification } from "../Notification";
 // import toast from "react-hot-toast";
 // import { useMutation} from "@apollo/client";
@@ -144,13 +144,11 @@ function AssignmentSubmission({ submissionClosed, configId, isOpen }) {
 
 interface AssignmentGradeButtonProps {
   assignmentId: number;
-  disabled: boolean;
+  disabled: boolean; // Is the button disabled.
 }
 
 /**
  * Returns the button that directs to the Appeal Submission page.
- * @param {number} assignmentId
- * @param {boolean} disabled - Is the button disabled.
  */
 function AppealGradeButton({ assignmentId, disabled }: AssignmentGradeButtonProps) {
   if (disabled) {
@@ -188,19 +186,14 @@ function AppealDetailsButton({ appealId }: { appealId: number }) {
 
 interface GradePanelProps {
   assignmentId: number;
-  finalGrade: Grade;
-  appealAttemptLeft: number;
+  finalGrade: Grade; // Final grade of the assignment submission
+  appealAttemptLeft: number; // Number of appeals attempt that can be made left
   appealId: number | null;
-  appealStatus: AppealStatus | null;
+  appealStatus: AppealStatus | null; // Latest status of the submitted appeal (if any)
 }
 
 /**
  * Returns a component of a box that shows the Final Grade and Appeal Status (if any)
- * @param {number} assignmentId
- * @param {Grade} finalGrade - Final grade of the assignment submission
- * @param {number} appealAttemptLeft - Number of appeals attempt that can be made left
- * @param {number} [appealId]
- * @param {AppealStatus} [appealStatus] - Latest status of the submitted appeal (if any)
  */
 function GradePanel({ assignmentId, finalGrade, appealAttemptLeft, appealId, appealStatus }: GradePanelProps) {
   let disabled = false;
@@ -281,11 +274,22 @@ function GradePanel({ assignmentId, finalGrade, appealAttemptLeft, appealId, app
   }
 }
 
+interface AssignmentContentProps {
+  content: AssignmentConfig; // Assignment the page is showing
+  appealsDetailsData; // Raw data on Appeal Details  retrieved via GraphQL Query
+  appealConfigData; // Raw data on Appeal Configurations retrieved via GraphQL Query
+  appealChangeLogData; // Raw data on Appeal-related Change Logs retrieved via GraphQL Query
+}
+
 /**
  * Returns a component that show the core content of the assignment page
- * @param {AssignmentConfig} content - Assignment the page is showing
  */
-export function AssignmentContent({ content }: { content: AssignmentConfig }) {
+export function AssignmentContent({
+  content,
+  appealsDetailsData,
+  appealConfigData,
+  appealChangeLogData,
+}: AssignmentContentProps) {
   const assignmentCreatedDate = new Date(content.createdAt);
   assignmentCreatedDate.setTime(assignmentCreatedDate.getTime() + 8 * 60 * 60 * 1000);
   const { user } = useZinc();
@@ -302,48 +306,67 @@ export function AssignmentContent({ content }: { content: AssignmentConfig }) {
     finalGrade = data.submissions[0].reports[0].grade;
   }
 
-  // TODO(Bryan): Get the following data from the Database after it's been update
-  const appealStatus = AppealStatus.Accept;
-  const appealId = 2;
-  const appealAttemptLeft = 1;
-  const appealAttempts: AppealAttempt[] = [
-    {
-      id: 1001,
-      assignmentConfigAndUserId: 999,
-      createdAt: "2023-8-22",
-      latestStatus: AppealStatus.Reject,
-      updatedAt: "2023-12-23",
-    },
-    {
-      id: 1002,
-      assignmentConfigAndUserId: 999,
-      createdAt: "2023-7-20",
-      latestStatus: AppealStatus.Accept,
-      updatedAt: "2023-12-21",
-    },
-  ];
-  const changeLogList: ChangeLog[] = [
-    {
-      id: 2001,
-      createdAt: "2023-6-22",
-      type: ChangeLogTypes.APPEAL_STATUS,
-      originalState: "[{'status':PENDING}]",
-      updatedState: "[{'status':REJECTED}]",
-      initiatedBy: 2,
-    },
-    {
-      id: 2002,
-      createdAt: "2023-1-1",
-      type: ChangeLogTypes.APPEAL_STATUS,
-      originalState: "[{'status':REJECTED}]",
-      updatedState: "[{'status':ACCEPTED}]",
-      initiatedBy: 2,
-    },
-  ];
-  // END OF TODO
+  // Translate `appealDetailsData` to `AppealAttempt[]`
+  let appealAttempts: AppealAttempt[] = [];
+  appealsDetailsData.appeals.forEach((appeal) => {
+    let latestStatus: AppealStatus = AppealStatus.Pending;
+    switch (appeal.status) {
+      case "ACCEPTED":
+        latestStatus = AppealStatus.Accept;
+        break;
+      case "PENDING":
+        latestStatus = AppealStatus.Pending;
+        break;
+      case "REJECTED":
+        latestStatus = AppealStatus.Reject;
+        break;
+      default:
+        latestStatus = AppealStatus.Pending;
+    }
 
-  let log: AppealLog[] = transformToAppealLog({ appeals: appealAttempts, changeLog: changeLogList });
+    appealAttempts.push({
+      id: appeal.id,
+      newFileSubmissionId: appeal.newFileSubmissionId || null,
+      assignmentConfigId: appeal.assignmentConfigId,
+      userId: appeal.userId,
+      createdAt: appeal.createdAt,
+      latestStatus: latestStatus,
+      updatedAt: appeal.updatedAt,
+    });
+  });
 
+  const appealAttemptLeft: number = appealConfigData.assignmentConfig.appealLimits - appealAttempts.length;
+
+  // Translate `appealChangeLogData` to `ChangeLog[]`
+  let changeLogs: ChangeLog[] = [];
+  appealChangeLogData.changeLogs.forEach((log) => {
+    // Assign a log type for each change log
+    let logType: ChangeLogTypes;
+    if (log.type == "APPEAL_STATUS") logType = ChangeLogTypes.APPEAL_STATUS;
+    else if (log.type == "SCORE") logType = ChangeLogTypes.SCORE;
+    else logType = ChangeLogTypes.SUBMISSION;
+
+    changeLogs.push({
+      id: log.id,
+      createdAt: log.createdAt,
+      type: logType,
+      originalState: log.originalState,
+      updatedState: log.updatedState,
+      initiatedBy: log.initiatedBy,
+      reason: log.reason || null,
+      appealId: log.appealId || null,
+    });
+  });
+
+  let appealId: number | null = null;
+  let appealStatus: AppealStatus | null = null;
+  if (appealAttempts.length > 0) {
+    appealId = appealAttempts[0].id;
+    appealStatus = appealAttempts[0].latestStatus;
+  }
+
+  // Transform and sort the lists
+  let log: AppealLog[] = transformToAppealLog({ appeals: appealAttempts, changeLog: changeLogs });
   let message: (
     | (SubmissionType & { _type: "submission" })
     | (DisplayMessageType & { _type: "appealMessage" })
@@ -421,7 +444,7 @@ export function AssignmentContent({ content }: { content: AssignmentConfig }) {
                   assignmentId={content.id}
                   finalGrade={finalGrade}
                   appealAttemptLeft={appealAttemptLeft}
-                  appealId={appealId}
+                  appealId={appealId} // Link to the latest appeal
                   appealStatus={appealStatus}
                 />
               )}

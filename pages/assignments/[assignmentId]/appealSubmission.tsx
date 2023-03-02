@@ -2,33 +2,28 @@ import { AssignmentSection } from "@/components/Assignment/List";
 import RichTextEditor from "@/components/RichTextEditor";
 import { LayoutProvider, useLayoutDispatch } from "@/contexts/layout";
 import { useZinc } from "@/contexts/zinc";
-import { GET_APPEAL_DETAIL } from "@/graphql/queries/user";
+import { CREATE_APPEAL, CREATE_APPEAL_MESSAGE } from "@/graphql/mutations/appealMutations";
+import { GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID, GET_APPEAL_CONFIG } from "@/graphql/queries/appealQueries";
+import { SUBMISSION_SUBSCRIPTION } from "@/graphql/queries/user";
 import { Layout } from "@/layout";
 import { initializeApollo } from "@/lib/apollo";
-import { Submission } from "@/types";
-import { AppealAttempt, AppealStatus } from "@/types/appeal";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { fad } from "@fortawesome/pro-duotone-svg-icons";
-import { far } from "@fortawesome/pro-regular-svg-icons";
+import { Submission, AppealStatus } from "@/types";
+import { useMutation, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "@mantine/core";
+import { zonedTimeToUtc } from "date-fns-tz";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { numAppealsLeft } from "@/utils/dummyData";
-
-library.add(fad, far);
 
 interface AppealFileSubmissionType {
-  allowUpload: boolean;
+  allowUpload: boolean; // Is the student allowed to upload files when submitting an appeal
   configId: any;
 }
 
 /**
  * Returns a component that allows file to be submitted along with the appeal
- * @param {boolean} allowUpload - Is the student allowed to upload files when submitting an appeal
- * @param {any} configId - The configuration ID
  */
 // TODO(BRYAN): Investigate the usage of `configId`
 function AppealFileSubmission({ allowUpload, configId }: AppealFileSubmissionType) {
@@ -107,30 +102,54 @@ function AppealFileSubmission({ allowUpload, configId }: AppealFileSubmissionTyp
   }
 }
 
+interface ButtonProps {
+  comments: string; // The text message sent to the TA when submitting the appeal
+  userId: number;
+  assignmentConfigId: number;
+}
+
 /**
  * Returns a appeal submission button
- * @param {string} comments - The text message sent to the TA when submitting the appeal
  */
-function Button({ comments }: { comments: string }) {
+function Button({ userId, assignmentConfigId, comments }: ButtonProps) {
+  // TODO(BRYAN): Investigate whether the new Date() will count the time when the page is opened OR when the button is pressed
+  const now = new Date();
+
+  const [createAppeal] = useMutation(CREATE_APPEAL);
+  const [createAppealMessage] = useMutation(CREATE_APPEAL_MESSAGE);
+
   return (
     <div>
       <button
         className="px-4 py-1 rounded-md text-lg bg-green-500 text-white hover:bg-green-600 active:bg-green-700 transition ease-in-out duration-150"
-        onClick={() => {
+        onClick={async () => {
           // Check if the text message blank. The student should filled in something for the appeal.
           if (comments === null || comments === "") {
             alert("Please Fill All Required Field");
           } else {
-            // TODO(Bryan): Submit the appeal using GraphQL mutation
-            const now = new Date();
+            // TODO(BRYAN): Add error checking + Notification
+            const { data } = await createAppeal({
+              variables: {
+                input: {
+                  assignmentConfigId,
+                  createdAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
+                  status: "PENDING",
+                  updatedAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
+                  userId,
+                },
+              },
+            });
 
-            const appeal: AppealAttempt = {
-              id: 1,
-              assignmentConfigAndUserId: 999,
-              createdAt: now.toString(),
-              latestStatus: AppealStatus.Pending,
-              updatedAt: now.toString(),
-            };
+            createAppealMessage({
+              variables: {
+                input: {
+                  message: comments,
+                  senderId: userId,
+                  appealId: data.createAppeal.id,
+                  createdAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
+                },
+              },
+            });
           }
         }}
       >
@@ -141,31 +160,37 @@ function Button({ comments }: { comments: string }) {
 }
 
 /*  Possible values for type Condition:
+ *   Loading: The page is loading information
  *   NotSubmitted: The student has not submitted anything yet for the assignment
  *   Processing: The system is still processing the assignment
+ *   Pending: The latest appeal is still pending. Student should not be able to submit another appeal before the first one is decided.
  *   NoAppealLeft: The number of appeal attempts left is zero
  *   FullMark: The student got full mark in the assignment
  *   NotFullMark: The student did NOT get full mark in the assignment
+ *   Error: The condition is not determined. It is a code problem.
  */
 enum Condition {
+  Unknown,
+  Loading,
   NotSubmitted,
   Processing,
+  Pending,
   NoAppealLeft,
   FullMark,
   NotFullMark,
 }
 
 type AppealAcceptProps = {
-  numAppealsLeft: number;
-  condition: Condition;
+  userId: number;
+  assignmentId: number;
+  numAppealsLeft: number; // Number of available appeal attempts left. Value should be >=1.
+  condition: Condition; // Condition of the assignment submission. Should be either `FullMark` or `NotFullMark`
 };
 
 /**
  * The content of Appeal Submission Page. Shown only if a new appeal can be sent.
- * @param {number} numAppealsLeft - Number of available appeal attempts left. Value should be >=1.
- * @param {Condition} condition - Condition of the assignment submission. Should be either `FullMark` or `NotFullMark`.
  */
-function AppealAccept({ numAppealsLeft, condition }: AppealAcceptProps) {
+function AppealAccept({ userId, assignmentId, numAppealsLeft, condition }: AppealAcceptProps) {
   const [comments, setComments] = useState("");
 
   return (
@@ -216,10 +241,10 @@ function AppealAccept({ numAppealsLeft, condition }: AppealAcceptProps) {
                 Your have got Full Mark. Are you sure you wish to submit a grade appeal?
               </p>
             </div>
-            <Button comments={comments} />
+            <Button userId={userId} assignmentConfigId={assignmentId} comments={comments} />
           </div>
         ) : (
-          <Button comments={comments} />
+          <Button userId={userId} assignmentConfigId={assignmentId} comments={comments} />
         )}
       </div>
     </div>
@@ -227,12 +252,11 @@ function AppealAccept({ numAppealsLeft, condition }: AppealAcceptProps) {
 }
 
 type AppealRejectProps = {
-  message: String;
+  message: String; // The error message shown to user for rejecting an appeal submission
 };
 
 /**
- * The error message for the Appeal Submission Page. Shown only if a new appeal CANNOT be sent.
- * @param {string} message - The error message shown to user for rejecting an appeal submission.
+ * The error message for the Appeal Submission Page. Shown only if a new appeal CANNOT be sent
  */
 function AppealReject({ message }: AppealRejectProps) {
   return (
@@ -253,24 +277,70 @@ function AppealReject({ message }: AppealRejectProps) {
   );
 }
 
-interface GradeAppealProps {
+interface AppealSubmissionProps {
+  userId: number;
   assignmentId: number;
-  numAppealsLeft: number;
-  condition: Condition;
+  numAppealsLeft: number; // The number of available appeal attempts left
+  appealDetailsData: any; // Raw data on Appeal Details  retrieved via GraphQL Query
 }
 
 /**
- * The Appeal Submission page.
- * @param {number} assignmentId - The assignment ID.
- * @param {number} numAppealsLeft - The number of available appeal attempts left.
- * @param {Condition} condition - Condition of the assignment submission.
+ * The Appeal Submission page
  */
-function AppealSubmission({ assignmentId, numAppealsLeft, condition }: GradeAppealProps) {
+function AppealSubmission({ userId, assignmentId, numAppealsLeft, appealDetailsData }: AppealSubmissionProps) {
   let errorMessage: String = "";
   let acceptAppeal: boolean;
 
+  // GraphQL Subscription
+  const { loading, data: submissionsData } = useSubscription<{ submissions: Submission[] }>(SUBMISSION_SUBSCRIPTION, {
+    variables: {
+      userId,
+      assignmentConfigId: assignmentId,
+    },
+  });
+
+  // Get the latest appeal status of the newest appeal
+  let latestStatus: AppealStatus | null = null;
+  if (appealDetailsData.appeals[0]) {
+    switch (appealDetailsData.appeals[0].status) {
+      case "ACCEPTED":
+        latestStatus = AppealStatus.Accept;
+        break;
+      case "PENDING":
+        latestStatus = AppealStatus.Pending;
+        break;
+      case "REJECTED":
+        latestStatus = AppealStatus.Reject;
+        break;
+      default:
+        latestStatus = AppealStatus.Pending;
+    }
+  }
+
+  // Determine the condition based on the database state
+  let condition: Condition = Condition.Unknown;
+  if (loading) condition = Condition.Loading;
+  else if (!submissionsData || submissionsData?.submissions.length === 0) {
+    condition = Condition.NotSubmitted;
+  } else if (submissionsData?.submissions[0].reports.length === 0) {
+    condition = Condition.Processing;
+  } else if (numAppealsLeft === 0) {
+    condition = Condition.NoAppealLeft;
+  } else if (latestStatus === AppealStatus.Pending) {
+    condition = Condition.Pending;
+  } else {
+    const score = submissionsData?.submissions[0].reports[0].grade.details.accScore;
+    const maxScore = submissionsData?.submissions[0].reports[0].grade.details.accTotal;
+    score && maxScore && score === maxScore ? (condition = Condition.FullMark) : (condition = Condition.NotFullMark);
+  }
+
   // Check the condition and decide if appeal is allowed
   switch (condition) {
+    case Condition.Loading: {
+      errorMessage = "Loading Data...";
+      acceptAppeal = false;
+      break;
+    }
     case Condition.NotSubmitted: {
       errorMessage = "You have not submitted anything yet.";
       acceptAppeal = false;
@@ -278,6 +348,11 @@ function AppealSubmission({ assignmentId, numAppealsLeft, condition }: GradeAppe
     }
     case Condition.Processing: {
       errorMessage = "Submission is still being processed.";
+      acceptAppeal = false;
+      break;
+    }
+    case Condition.Pending: {
+      errorMessage = "Another appeal is still pending.";
       acceptAppeal = false;
       break;
     }
@@ -292,6 +367,11 @@ function AppealSubmission({ assignmentId, numAppealsLeft, condition }: GradeAppe
     }
     case Condition.NotFullMark: {
       acceptAppeal = true;
+      break;
+    }
+    default: {
+      errorMessage = "Unknown Condition. Please check `appealSubmission.tsx`.";
+      acceptAppeal = false;
       break;
     }
   }
@@ -309,7 +389,12 @@ function AppealSubmission({ assignmentId, numAppealsLeft, condition }: GradeAppe
               </a>
             </Link>
             {acceptAppeal ? (
-              <AppealAccept numAppealsLeft={numAppealsLeft} condition={condition} />
+              <AppealAccept
+                userId={userId}
+                assignmentId={assignmentId}
+                numAppealsLeft={numAppealsLeft}
+                condition={condition}
+              />
             ) : (
               <AppealReject message={errorMessage} />
             )}
@@ -325,37 +410,35 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   const assignmentId = parseInt(query.assignmentId as string);
 
   const apolloClient = initializeApollo(req.headers.cookie as string);
-  const { data } = await apolloClient.query<{ submissions: Submission[] }>({
-    query: GET_APPEAL_DETAIL,
+
+  /* GraphQL Queries */
+  const { data: appealDetailsData } = await apolloClient.query({
+    query: GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID,
     variables: {
       userId,
       assignmentConfigId: assignmentId,
     },
   });
 
-  // TODO(Bryan): Get the value from database after it's updated -> `numAppealsLeft`
-  let condition = Condition.NotFullMark;
+  const { data: appealConfigData } = await apolloClient.query({
+    query: GET_APPEAL_CONFIG,
+    variables: {
+      assignmentConfigId: assignmentId,
+    },
+  });
+  /* End of GraphQL Queries */
 
-  // Determine the condition based on the database state
-  if (data.submissions.length === 0) {
-    condition = Condition.NotSubmitted;
-  } else if (data.submissions[0].reports.length === 0) {
-    condition = Condition.Processing;
-  } else if (numAppealsLeft === 0) {
-    condition = Condition.NoAppealLeft;
-  } else {
-    const score = data.submissions[0].reports[0].grade.details.accScore;
-    const maxScore = data.submissions[0].reports[0].grade.details.accTotal;
-
-    score === maxScore ? (condition = Condition.FullMark) : (condition = Condition.NotFullMark);
-  }
+  let numAppealsLeft: number = -1;
+  if (appealConfigData && appealDetailsData)
+    numAppealsLeft = appealConfigData.assignmentConfig.appealLimits - appealDetailsData.appeals.length;
 
   return {
     props: {
       initialApolloState: apolloClient.cache.extract(),
+      userId,
       assignmentId,
       numAppealsLeft,
-      condition,
+      appealDetailsData,
     },
   };
 };

@@ -4,11 +4,15 @@ import { AppealTextMessage } from "@/components/Appeal/AppealTextMessage";
 import { AssignmentSection } from "@/components/Assignment/List";
 import RichTextEditor from "@/components/RichTextEditor";
 import { LayoutProvider } from "@/contexts/layout";
+import {
+  GET_APPEAL_DETAILS_BY_APPEAL_ID,
+  GET_APPEAL_MESSAGES,
+  GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID,
+} from "@/graphql/queries/appealQueries";
 import { Layout } from "@/layout";
-import { AppealLog, AppealStatus, DisplayMessageType } from "@/types/appeal";
+import { AppealAttempt, AppealLog, AppealStatus, ChangeLog, ChangeLogTypes, DisplayMessageType } from "@/types/appeal";
 import { Submission as SubmissionType } from "@/types/tables";
 import { sort, transformToAppealLog } from "@/utils/appealUtils";
-import { appeal, appealAttempts, changeLogList, messageList } from "@/utils/dummyData";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Tab } from "@headlessui/react";
 import { Alert, clsx, createStyles } from "@mantine/core";
@@ -17,15 +21,16 @@ import Link from "next/link";
 import { DiffSubmissionsData } from "pages/api/appeals/diffSubmissions";
 import { useEffect, useState } from "react";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
+import { initializeApollo } from "../../../lib/apollo";
 
-type ActivityLogTabProps = {
+interface ActivityLogTabProps {
   /* A list of logs that may include appeal messages and appeal logs */
   activityLogList: (
     | (SubmissionType & { _type: "submission" })
     | (DisplayMessageType & { _type: "appealMessage" })
     | (AppealLog & { _type: "appealLog" })
   )[];
-};
+}
 
 /**
  * Return a component that shows the Activity Log under the Activity Log Tab to show all appeal messages and appeal logs
@@ -54,6 +59,7 @@ function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
             }
           },
         )}
+        <div className="h-8 border-l-2"></div>
       </>
       <div className="mb-6 sticky bottom-0 object-bottom">
         {/* @ts-ignore */}
@@ -71,9 +77,9 @@ function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
   );
 }
 
-type CodeComparisonTabProps = {
+interface CodeComparisonTabProps {
   diffData: DiffSubmissionsData & { status?: number };
-};
+}
 
 /**
  * Show the difference between new and old file submissions under the Code Comparison Tab by using ReactGhLikeDiff
@@ -120,9 +126,9 @@ const useStyles = createStyles(() => ({
   },
 }));
 
-type AppealResultBoxProps = {
+interface AppealResultBoxProps {
   appealResult: AppealStatus; // The latest appeal status
-};
+}
 
 /**
  * Returns the component that shows the latest appeal status at the top of the page
@@ -147,10 +153,12 @@ function AppealResultBox({ appealResult }: AppealResultBoxProps) {
           <AppealResult appealResult={appealResult} />
         </div>
       );
+    default:
+      return <></>;
   }
 }
 
-type AppealDetailsProps = {
+interface AppealDetailsProps {
   assignmentId: number; // The assignment ID that the appeal is related to
   appealSubmitted: boolean; // Is the appeal ID valid
   allowAccess: boolean; // Is the student allowed to access the appeal
@@ -161,7 +169,7 @@ type AppealDetailsProps = {
     | (DisplayMessageType & { _type: "appealMessage" })
     | (AppealLog & { _type: "appealLog" })
   )[];
-};
+}
 
 /**
  * Returns the entire Appeal Details page
@@ -284,41 +292,118 @@ function AppealDetails({
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ req, query }) => {
+  const apolloClient = initializeApollo(req.headers.cookie!);
   const userId = parseInt(req.cookies.user);
   const assignmentId = parseInt(query.assignmentId as string);
+  const appealId = parseInt(query.appealId as string);
 
-  // TODO(BRYAN): Retrieve the data from server once it's updated
-  //The data to be retrieved: appeal, appealAttempts, changeLogList, messageList
+  // TODO(BRYAN): Handle if Queries return nothing (i.e. invalid appealId)
 
-  const appealUserID: number = userId; // Used for checking if the userID matches
+  /* GraphQL Queries */
+  const { data: appealDetailsData } = await apolloClient.query({
+    query: GET_APPEAL_DETAILS_BY_APPEAL_ID,
+    variables: {
+      appealId: appealId,
+    },
+  });
 
-  let log: AppealLog[] = transformToAppealLog({ appeals: appealAttempts, changeLog: changeLogList });
+  const { data: appealChangeLogData } = await apolloClient.query({
+    query: GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID,
+    variables: {
+      appealId: appealId,
+    },
+  });
 
+  const { data: appealMessagesData } = await apolloClient.query({
+    query: GET_APPEAL_MESSAGES,
+    variables: {
+      appealId: appealId,
+    },
+  });
+  /* End of GraphQL Queries */
+
+  // Translate `appealDetailsData` to `AppealAttempt[]`
+  let appealAttempt: AppealAttempt[] = [];
+  if (appealDetailsData.appeal) {
+    appealAttempt.push({
+      id: appealId,
+      newFileSubmissionId: appealDetailsData.appeal.newFileSubmissionId || null,
+      assignmentConfigId: appealDetailsData.appeal.assignmentConfigId,
+      userId: appealDetailsData.appeal.userId,
+      createdAt: appealDetailsData.appeal.createdAt,
+      latestStatus: appealDetailsData.appeal.status,
+      updatedAt: appealDetailsData.appeal.updatedAt,
+    });
+  }
+
+  const latestStatus: AppealStatus = appealAttempt[0].latestStatus;
+
+  // Translate `appealChangeLogData` to `ChangeLog[]`
+  let changeLogs: ChangeLog[] = [];
+  appealChangeLogData.changeLogs.forEach((log) => {
+    // Assign a log type for each change log
+    let logType: ChangeLogTypes;
+    if (log.type == "APPEAL_STATUS") logType = ChangeLogTypes.APPEAL_STATUS;
+    else if (log.type == "SCORE") logType = ChangeLogTypes.SCORE;
+    else logType = ChangeLogTypes.SUBMISSION;
+
+    changeLogs.push({
+      id: log.id,
+      createdAt: log.createdAt,
+      type: logType,
+      originalState: log.originalState,
+      updatedState: log.updatedState,
+      initiatedBy: log.initiatedBy,
+      reason: log.reason || null,
+      appealId: log.appealId || null,
+    });
+  });
+
+  // Translate `appealMessagesData` to `DisplayMessageType[]`
+  let messages: DisplayMessageType[] = [];
+  appealMessagesData.appealMessages.forEach((message) => {
+    // Assign a user type for each message
+    let userType: "Student" | "Teaching Assistant";
+    if (message.user.hasTeachingRole) userType = "Teaching Assistant";
+    else userType = "Student";
+
+    messages.push({
+      id: message.id,
+      content: message.message,
+      name: message.user.name,
+      type: userType,
+      time: message.createdAt,
+    });
+  });
+
+  // Transform and sort the lists
+  let log: AppealLog[] = transformToAppealLog({ appeals: appealAttempt, changeLog: changeLogs });
   let activityLogList: (
     | (SubmissionType & { _type: "submission" })
     | (DisplayMessageType & { _type: "appealMessage" })
     | (AppealLog & { _type: "appealLog" })
   )[] = sort({
-    messages: messageList,
+    messages: messages,
     appealLog: log,
   });
 
   // Check if appeal is non-null
   let appealSubmitted: boolean;
-  if (appeal !== null) appealSubmitted = true;
+  if (appealAttempt.length > 0) appealSubmitted = true;
   else appealSubmitted = false;
 
   // Check if the student has access to the appeal
   let allowAccess: boolean;
-  if (appealUserID === userId) allowAccess = true;
+  if (appealDetailsData.appeal.userId === userId) allowAccess = true;
   else allowAccess = false;
 
   return {
     props: {
+      initialApolloState: apolloClient.cache.extract(),
       assignmentId,
       allowAccess,
       appealSubmitted,
-      appealResult: appeal?.latestStatus,
+      appealResult: latestStatus,
       activityLogList,
     },
   };

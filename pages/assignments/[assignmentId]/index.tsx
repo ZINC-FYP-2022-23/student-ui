@@ -1,16 +1,21 @@
+import {
+  GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID,
+  GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID,
+  GET_APPEAL_CONFIG,
+} from "@/graphql/queries/appealQueries";
+import { GET_ASSIGNMENT_DETAIL } from "@/graphql/queries/user";
 import { useQuery } from "@apollo/client";
 import { useRouter } from "next/router";
 import { Modal, SlideOver } from "../../../components";
 import { AssignmentContent } from "../../../components/Assignment/Content";
 import { AssignmentSection } from "../../../components/Assignment/List";
-import { LayoutProvider, useLayoutState } from "../../../contexts/layout";
-import { GET_ASSIGNMENT_DETAIL } from "../../../graphql/queries/user";
-import { Layout } from "../../../layout";
-import { initializeApollo } from "../../../lib/apollo";
 import { ReportSlideOver } from "../../../components/Report/index";
 import { StdioTestDetailView } from "../../../components/Report/StdioTestStageReport";
 import { ValgrindDetailView } from "../../../components/Report/ValgrindStageReport";
-import { AssignmentConfig } from "../../../types";
+import { LayoutProvider, useLayoutState } from "@/contexts/layout";
+import { Layout } from "@/layout";
+import { initializeApollo } from "@/lib/apollo";
+import { AssignmentConfig } from "@/types";
 
 function ModalContent() {
   const { modalType } = useLayoutState();
@@ -24,12 +29,39 @@ function ModalContent() {
   }
 }
 
-function Assignment() {
+interface AssignmentProps {
+  userId: number;
+}
+
+/**
+ * The Assignment Submission Page
+ */
+function Assignment({ userId }: AssignmentProps) {
   const router = useRouter();
   const { assignmentId } = router.query;
+  const assignmentConfigId = parseInt(assignmentId as string, 10);
   const { data, loading } = useQuery<{ assignmentConfig: AssignmentConfig }>(GET_ASSIGNMENT_DETAIL, {
     variables: {
-      assignmentConfigId: parseInt(assignmentId as string, 10),
+      assignmentConfigId,
+    },
+  });
+
+  const { data: appealsDetailsData } = useQuery(GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID, {
+    variables: {
+      userId,
+      assignmentConfigId,
+    },
+  });
+
+  const { data: appealChangeLogData } = useQuery(GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID, {
+    variables: {
+      assignmentConfigId,
+    },
+  });
+
+  const { data: appealConfigData } = useQuery(GET_APPEAL_CONFIG, {
+    variables: {
+      assignmentConfigId,
     },
   });
 
@@ -38,7 +70,14 @@ function Assignment() {
       <Layout title={data!.assignmentConfig.assignment.name}>
         <main className="flex-1 flex bg-gray-200">
           <AssignmentSection />
-          <AssignmentContent content={data!.assignmentConfig} />
+          {appealsDetailsData && appealConfigData && appealChangeLogData && (
+            <AssignmentContent
+              content={data!.assignmentConfig}
+              appealsDetailsData={appealsDetailsData}
+              appealConfigData={appealConfigData}
+              appealChangeLogData={appealChangeLogData}
+            />
+          )}
         </main>
       </Layout>
       <SlideOver>
@@ -56,15 +95,20 @@ function Assignment() {
 
 export async function getServerSideProps(ctx) {
   const apolloClient = initializeApollo(ctx.req.headers.cookie);
+  const userId: number = parseInt(ctx.req.cookies.user);
+  const assignmentConfigId = parseInt(ctx.query.assignmentId, 10);
+
   await apolloClient.query({
     query: GET_ASSIGNMENT_DETAIL,
     variables: {
-      assignmentConfigId: parseInt(ctx.query.assignmentId, 10),
+      assignmentConfigId,
     },
   });
+
   return {
     props: {
       initialApolloState: apolloClient.cache.extract(),
+      userId,
     },
   };
 }
