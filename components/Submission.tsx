@@ -17,7 +17,7 @@ export function Submission({ submission }: { submission: SubmissionType }) {
       </ul>
       {(submission.fail_reason || submission.extracted_path === null) && (
         <>
-          <div className="mx-12 h-12 border-l-2"></div>
+          <div className="mx-12 h-8 border-l-2"></div>
           <div className="mx-8 flex justify-between">
             <div className="flex items-center">
               <div className="w-8 h-8 bg-red-500 rounded-full flex justify-center items-center">
