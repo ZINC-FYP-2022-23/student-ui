@@ -1,9 +1,9 @@
 import { useMemo } from "react";
-import { ApolloClient, HttpLink, InMemoryCache, split } from "@apollo/client";
+import { ApolloClient, HttpLink, InMemoryCache, NormalizedCacheObject, split } from "@apollo/client";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { WebSocketLink } from "@apollo/client/link/ws";
 
-let apolloClient;
+let apolloClient: ApolloClient<NormalizedCacheObject>;
 const isBrowser = typeof window !== "undefined";
 const endpoint = "localhost:8080/v1/graphql";
 // const endpoint = 'api.oap.ust.dev/v1/graphql';
