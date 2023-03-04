@@ -21,8 +21,12 @@ function Icon({ name, type }: IconProps) {
       backgroundColor = "bg-gray-800";
   }
 
+  let letter: string;
+  if (name.length > 0) letter = name.charAt(0);
+  else letter = name;
+
   const css = "w-8 h-8 leading-8 rounded-full text-white font-bold text-lg text-center " + backgroundColor;
-  return <div className={css}>{name.charAt(0)}</div>;
+  return <div className={css}>{letter}</div>;
 }
 
 /**
