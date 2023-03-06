@@ -71,7 +71,7 @@ export function AppealTextMessage({ message }: { message: DisplayMessageType }) 
                 })} at ${logDate.toLocaleTimeString().toLowerCase()}`}
               </p>
             </div>
-            <p className="ml-2 text-sm text-gray-900 font-bold">{content}</p>
+            <div className="ml-2 text-m text-gray-900" dangerouslySetInnerHTML={{ __html: content }} />
           </div>
         </div>
       </div>

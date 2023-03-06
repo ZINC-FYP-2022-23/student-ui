@@ -4,37 +4,74 @@ import { AppealTextMessage } from "@/components/Appeal/AppealTextMessage";
 import { AssignmentSection } from "@/components/Assignment/List";
 import RichTextEditor from "@/components/RichTextEditor";
 import { LayoutProvider } from "@/contexts/layout";
+import { CREATE_APPEAL_MESSAGE } from "@/graphql/mutations/appealMutations";
 import {
+  GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID,
   GET_APPEAL_DETAILS_BY_APPEAL_ID,
   GET_APPEAL_MESSAGES,
-  GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID,
 } from "@/graphql/queries/appealQueries";
 import { Layout } from "@/layout";
 import { AppealAttempt, AppealLog, AppealStatus, ChangeLog, ChangeLogTypes, DisplayMessageType } from "@/types/appeal";
 import { Submission as SubmissionType } from "@/types/tables";
 import { sort, transformToAppealLog } from "@/utils/appealUtils";
+import { useMutation } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Tab } from "@headlessui/react";
 import { Alert, clsx, createStyles } from "@mantine/core";
+import { zonedTimeToUtc } from "date-fns-tz";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useState } from "react";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
 import { initializeApollo } from "../../../lib/apollo";
 
+// TODO(BRYAN): Automatically show the message being sent when `Send Message` is clicked
+
+interface ButtonProps {
+  comments: string; // The text message sent to the TA when submitting the appeal
+  userId: number;
+}
+
 /**
- * Data returned by the webhook `/diffSubmissions` endpoint, which compares two assignment submissions.
+ * Returns a appeal submission button
  */
-type DiffSubmissionsData = {
-  /** Diff output between the old submission and the new submission. */
-  diff: string;
-  /** Error message if any. */
-  error: string | null;
-  /** HTTP status of the API call. */
-  status: number;
-};
+function Button({ userId, comments }: ButtonProps) {
+  // TODO(BRYAN): Investigate whether the new Date() will count the time when the page is opened OR when the button is pressed
+  const router = useRouter();
+  const { appealId } = router.query;
+  const now = new Date();
+  const [createAppealMessage] = useMutation(CREATE_APPEAL_MESSAGE);
+
+  return (
+    <button
+      className="px-4 py-1 rounded-md text-lg bg-green-500 text-white hover:bg-green-600 active:bg-green-700 transition ease-in-out duration-150"
+      onClick={async () => {
+        // Check if the text message blank. The student should filled in something for the appeal.
+        if (comments === null || comments === "") {
+          alert("Please Fill All Required Field");
+        } else {
+          // TODO(BRYAN): Add error checking + Notification
+          createAppealMessage({
+            variables: {
+              input: {
+                message: comments,
+                senderId: userId,
+                appealId: appealId,
+                createdAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
+              },
+            },
+          });
+        }
+      }}
+    >
+      Send Message
+    </button>
+  );
+}
 
 interface ActivityLogTabProps {
+  userId: number;
   /* A list of logs that may include appeal messages and appeal logs */
   activityLogList: (
     | (SubmissionType & { _type: "submission" })
@@ -46,11 +83,12 @@ interface ActivityLogTabProps {
 /**
  * Return a component that shows the Activity Log under the Activity Log Tab to show all appeal messages and appeal logs
  */
-function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
+function ActivityLogTab({ userId, activityLogList }: ActivityLogTabProps) {
   const [comments, setComments] = useState("");
+  const [createAppealMessage] = useMutation(CREATE_APPEAL_MESSAGE);
 
   return (
-    <div className="flex flex-col ">
+    <div className="flex flex-col">
       <>
         {activityLogList.map(
           (
@@ -72,7 +110,7 @@ function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
         )}
         <div className="h-8 border-l-2"></div>
       </>
-      <div className="mb-6 sticky bottom-0 object-bottom">
+      <div className="mb-6 sticky bottom-0 object-bottom flex-row justify-between">
         {/* @ts-ignore */}
         <RichTextEditor
           id="rte"
@@ -83,6 +121,13 @@ function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
             ["h1", "h2", "h3", "unorderedList", "orderedList"],
           ]}
         />
+        <div className="py-1" />
+        {/* Hide the Send Message Button if the text editor is empty */}
+        {comments && comments !== "<p><br></p>" && (
+          <div className="flex justify-center">
+            <Button userId={userId} comments={comments} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -90,6 +135,18 @@ function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
 
 type CodeComparisonTabProps = {
   diffData: DiffSubmissionsData;
+};
+
+/**
+ * Data returned by the webhook `/diffSubmissions` endpoint, which compares two assignment submissions.
+ */
+type DiffSubmissionsData = {
+  /** Diff output between the old submission and the new submission. */
+  diff: string;
+  /** Error message if any. */
+  error: string | null;
+  /** HTTP status of the API call. */
+  status: number;
 };
 
 /**
@@ -170,6 +227,7 @@ function AppealResultBox({ appealResult }: AppealResultBoxProps) {
 }
 
 interface AppealDetailsProps {
+  userId: number;
   assignmentId: number; // The assignment ID that the appeal is related to
   appealSubmitted: boolean; // Is the appeal ID valid
   allowAccess: boolean; // Is the student allowed to access the appeal
@@ -187,6 +245,7 @@ interface AppealDetailsProps {
  * Returns the entire Appeal Details page
  */
 function AppealDetails({
+  userId,
   assignmentId,
   appealSubmitted,
   allowAccess,
@@ -245,7 +304,7 @@ function AppealDetails({
                   <Tab.Panels>
                     {/* "Messaging" tab panel */}
                     <Tab.Panel>
-                      <ActivityLogTab activityLogList={activityLogList} />
+                      <ActivityLogTab userId={userId} activityLogList={activityLogList} />
                     </Tab.Panel>
                     {/* "Code Comparison" tab panel */}
                     <Tab.Panel>
@@ -284,7 +343,6 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   const appealId = parseInt(query.appealId as string);
 
   // TODO(BRYAN): Handle if Queries return nothing (i.e. invalid appealId)
-
   /* GraphQL Queries */
   const { data: appealDetailsData } = await apolloClient.query({
     query: GET_APPEAL_DETAILS_BY_APPEAL_ID,
@@ -404,6 +462,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   return {
     props: {
       initialApolloState: apolloClient.cache.extract(),
+      userId,
       assignmentId,
       allowAccess,
       appealSubmitted,
