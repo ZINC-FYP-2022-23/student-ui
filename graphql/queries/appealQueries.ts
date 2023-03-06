@@ -51,7 +51,7 @@ export const GET_APPEAL_CONFIG = gql`
 
 /* Queries used in `Appeal Details Page` */
 export const GET_APPEAL_DETAILS_BY_APPEAL_ID = gql`
-  query getAppealDetails($appealId: bigint!) {
+  subscription getAppealDetails($appealId: bigint!) {
     appeal(id: $appealId) {
       assignmentConfigId
       createdAt
@@ -70,7 +70,7 @@ export const GET_APPEAL_DETAILS_BY_APPEAL_ID = gql`
 `;
 
 export const GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID = gql`
-  query getChangeLogs($appealId: bigint!) {
+  subscription getChangeLogs($appealId: bigint!) {
     changeLogs(where: { appealId: { _eq: $appealId } }, order_by: { createdAt: desc }) {
       assignmentConfigId
       createdAt
@@ -88,7 +88,7 @@ export const GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID = gql`
 `;
 
 export const GET_APPEAL_MESSAGES = gql`
-  query getAppealMessages($appealId: bigint!) {
+  subscription getAppealMessages($appealId: bigint!) {
     appealMessages(where: { appealId: { _eq: $appealId } }, order_by: { createdAt: desc }) {
       createdAt
       id
