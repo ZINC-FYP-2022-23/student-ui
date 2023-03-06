@@ -9,11 +9,11 @@ export enum AppealStatus {
   Pending = "Pending",
 }
 
-// Any updates on `AppealAttempt` have to update function `isAppealAttempt()`
 export type AppealAttempt = {
   id: number;
   newFileSubmissionId?: string;
-  assignmentConfigAndUserId: number;
+  assignmentConfigId: number;
+  userId: number;
   createdAt: string;
   latestStatus: AppealStatus;
   updatedAt: string;
