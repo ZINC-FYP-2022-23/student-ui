@@ -2,7 +2,7 @@
  * @file Utilities for transforming stage reports.
  */
 
-import { DiffReport, RunReport, StdioTestCaseReport, StdioTestReport } from "@/types/stageReport";
+import { DiffReport, RunReport, StdioTestReport } from "@/types/stageReport";
 
 /**
  * Combines reports from the `Run` and `Diff` stages into a `StdioTest` stage report.
