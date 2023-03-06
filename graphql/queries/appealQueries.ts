@@ -47,7 +47,6 @@ export const GET_APPEAL_CONFIG = gql`
     }
   }
 `;
-
 /* End of Queries used in `Assignment Page */
 
 /* Queries used in `Appeal Details Page` */

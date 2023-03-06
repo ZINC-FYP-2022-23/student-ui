@@ -71,6 +71,8 @@ export const GET_REPORT = gql`
   }
 `;
 
+// TODO(Bryan): Idea -> Also query appeals, so that it returns:
+// { submissions: SubmissionType[], appeals: <insert type here>[] }
 export const SUBMISSION_SUBSCRIPTION = gql`
   subscription submissionsForAssignment($userId: bigint, $assignmentConfigId: bigint!) {
     submissions(
@@ -146,20 +148,6 @@ export const GET_ASSIGNMENT_DETAIL = gql`
         workloadType {
           name
         }
-      }
-    }
-  }
-`;
-
-export const GET_APPEAL_DETAIL = gql`
-  query submissionsForAssignment($userId: bigint, $assignmentConfigId: bigint!) {
-    submissions(
-      order_by: [{ created_at: desc }]
-      where: { user_id: { _eq: $userId }, assignment_config_id: { _eq: $assignmentConfigId } }
-      limit: 1
-    ) {
-      reports(order_by: [{ createdAt: desc }]) {
-        grade
       }
     }
   }
