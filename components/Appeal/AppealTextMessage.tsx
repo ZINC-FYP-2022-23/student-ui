@@ -41,17 +41,21 @@ export function AppealTextMessage({ message }: { message: DisplayMessageType }) 
   logDate.setTime(logDate.getTime() + 8 * 60 * 60 * 1000);
 
   let backgroundColor: string;
+  let borderColor: string;
   switch (type) {
     case "Student":
-      backgroundColor = "bg-blue-100";
+      backgroundColor = "bg-blue-100 ";
+      borderColor = "border-blue-800 ";
       break;
     case "Teaching Assistant":
-      backgroundColor = "bg-red-100";
+      backgroundColor = "bg-red-100 ";
+      borderColor = "border-red-800 ";
       break;
     default:
-      backgroundColor = "bg-gray-100";
+      backgroundColor = "bg-gray-100 ";
+      borderColor = "border-gray-800 ";
   }
-  const backgroundCSS = "p-3 mx-8 flex justify-between rounded-lg " + backgroundColor;
+  const backgroundCSS = "p-3 mx-8 flex justify-between rounded-lg border-2 " + backgroundColor + borderColor;
 
   return (
     <>
