@@ -40,10 +40,11 @@ export const GET_APPEAL_CONFIG = gql`
   query getAppealConfig($assignmentConfigId: bigint!) {
     assignmentConfig(id: $assignmentConfigId) {
       appealLimits
-      appealDueAt
       isAppealAllowed
       isAppealStudentReplyAllowed
-      isAppealing
+      appealStartAt
+      appealStopAt
+      isAppealViewReportAllowed
     }
   }
 `;
