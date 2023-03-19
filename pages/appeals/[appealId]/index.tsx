@@ -7,16 +7,16 @@ import { LayoutProvider } from "@/contexts/layout";
 import { CREATE_APPEAL_MESSAGE } from "@/graphql/mutations/appealMutations";
 import {
   GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID,
+  GET_APPEAL_CONFIG,
   GET_APPEAL_DETAILS_BY_APPEAL_ID,
   GET_APPEAL_MESSAGES,
-  GET_APPEAL_CONFIG,
   GET_ASSIGNMENT_CONFIG_ID_BY_APPEAL_ID,
 } from "@/graphql/queries/appealQueries";
 import { Layout } from "@/layout";
 import { AppealAttempt, AppealLog, AppealStatus, DisplayMessageType } from "@/types/appeal";
 import { Submission as SubmissionType } from "@/types/tables";
-import { transformToAppealAttempt, mergeDataToActivityLogList } from "@/utils/appealUtils";
-import { useQuery, useMutation, useSubscription } from "@apollo/client";
+import { mergeDataToActivityLogList, transformToAppealAttempt } from "@/utils/appealUtils";
+import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Tab } from "@headlessui/react";
 import { Alert, clsx, createStyles } from "@mantine/core";
@@ -345,7 +345,7 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
     return <DisplayLoading assignmentId={assignmentId} />;
   }
 
-  // Display Error if data cannot be fetched
+  // Display error if it occurred
   if (appealConfigError) {
     const errorMessage = "Unable to Fetch appeal details with `GET_APPEAL_CONFIG`";
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
@@ -363,7 +363,7 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
     const errorMessage = "Invalid appeal. Please check the appeal number.";
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   } else if (!appealConfigData.assignmentConfig.isAppealAllowed) {
-    // Check if the assignment config is available, if not, there is no such assignment
+    // Check if the appeal submission is allowed
     const errorMessage = "The assignment does not allow any appeals.";
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   }

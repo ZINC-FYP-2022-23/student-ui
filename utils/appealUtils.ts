@@ -211,7 +211,8 @@ function transformToAppealLog({ appeals, changeLog }: transformToAppealLogProps)
 interface mergeDataToActivityLogListProps {
   appealAttempt: AppealAttempt[]; // Raw data of a list of appeals
   appealChangeLogData; // Raw data of a list of change logs related to the appeals
-  appealMessagesData; // Raw data of a list of appeal messages related to the appeals
+  appealMessagesData?; // Raw data of a list of appeal messages related to the appeals
+  submissionData?; // Raw data of the submission
 }
 
 /**
@@ -226,6 +227,7 @@ export function mergeDataToActivityLogList({
   appealAttempt,
   appealChangeLogData,
   appealMessagesData,
+  submissionData,
 }: mergeDataToActivityLogListProps) {
   // Translate `appealChangeLogData` to `ChangeLog[]`
   let changeLogs: ChangeLog[] = [];
@@ -250,20 +252,22 @@ export function mergeDataToActivityLogList({
 
   // Translate `appealMessagesData` to `DisplayMessageType[]`
   let messages: DisplayMessageType[] = [];
-  appealMessagesData.appealMessages.forEach((message) => {
-    // Assign a user type for each message
-    let userType: "Student" | "Teaching Assistant";
-    if (message.user.hasTeachingRole) userType = "Teaching Assistant";
-    else userType = "Student";
+  if (appealMessagesData) {
+    appealMessagesData.appealMessages.forEach((message) => {
+      // Assign a user type for each message
+      let userType: "Student" | "Teaching Assistant";
+      if (message.user.hasTeachingRole) userType = "Teaching Assistant";
+      else userType = "Student";
 
-    messages.push({
-      id: message.id,
-      content: message.message,
-      name: message.user.name,
-      type: userType,
-      time: message.createdAt,
+      messages.push({
+        id: message.id,
+        content: message.message,
+        name: message.user.name,
+        type: userType,
+        time: message.createdAt,
+      });
     });
-  });
+  }
 
   // Transform and sort the lists
   let log: AppealLog[] = transformToAppealLog({ appeals: appealAttempt, changeLog: changeLogs });
@@ -274,6 +278,7 @@ export function mergeDataToActivityLogList({
   )[] = sort({
     messages: messages,
     appealLog: log,
+    submissions: submissionData?.submissions,
   });
 
   return activityLogList;

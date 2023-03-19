@@ -1,8 +1,3 @@
-import {
-  GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID,
-  GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID,
-  GET_APPEAL_CONFIG,
-} from "@/graphql/queries/appealQueries";
 import { GET_ASSIGNMENT_DETAIL } from "@/graphql/queries/user";
 import { useQuery } from "@apollo/client";
 import { useRouter } from "next/router";
@@ -40,26 +35,7 @@ function Assignment({ userId }: AssignmentProps) {
   const router = useRouter();
   const { assignmentId } = router.query;
   const assignmentConfigId = parseInt(assignmentId as string, 10);
-  const { data, loading } = useQuery<{ assignmentConfig: AssignmentConfig }>(GET_ASSIGNMENT_DETAIL, {
-    variables: {
-      assignmentConfigId,
-    },
-  });
-
-  const { data: appealsDetailsData } = useQuery(GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID, {
-    variables: {
-      userId,
-      assignmentConfigId,
-    },
-  });
-
-  const { data: appealChangeLogData } = useQuery(GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID, {
-    variables: {
-      assignmentConfigId,
-    },
-  });
-
-  const { data: appealConfigData } = useQuery(GET_APPEAL_CONFIG, {
+  const { data } = useQuery<{ assignmentConfig: AssignmentConfig }>(GET_ASSIGNMENT_DETAIL, {
     variables: {
       assignmentConfigId,
     },
@@ -70,14 +46,7 @@ function Assignment({ userId }: AssignmentProps) {
       <Layout title={data!.assignmentConfig.assignment.name}>
         <main className="flex-1 flex bg-gray-200">
           <AssignmentSection />
-          {appealsDetailsData && appealConfigData && appealChangeLogData && (
-            <AssignmentContent
-              content={data!.assignmentConfig}
-              appealsDetailsData={appealsDetailsData}
-              appealConfigData={appealConfigData}
-              appealChangeLogData={appealChangeLogData}
-            />
-          )}
+          <AssignmentContent content={data!.assignmentConfig} />
         </main>
       </Layout>
       <SlideOver>
