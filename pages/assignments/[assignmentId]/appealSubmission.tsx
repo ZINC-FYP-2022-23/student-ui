@@ -14,19 +14,21 @@ import { Alert } from "@mantine/core";
 import { zonedTimeToUtc } from "date-fns-tz";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
 interface AppealFileSubmissionType {
   allowUpload: boolean; // Is the student allowed to upload files when submitting an appeal
   configId: any;
+  setNewFileSubmissionId: (x: number | null) => void;
 }
 
 /**
  * Returns a component that allows file to be submitted along with the appeal
  */
 // TODO(BRYAN): Investigate the usage of `configId`
-function AppealFileSubmission({ allowUpload, configId }: AppealFileSubmissionType) {
+function AppealFileSubmission({ allowUpload, configId, setNewFileSubmissionId }: AppealFileSubmissionType) {
   const { user, submitFile } = useZinc();
   // const [updateSubmissionNoti] = useMutation(UPDATE_SUBMISSION_NOTI)
   const dispatch = useLayoutDispatch();
@@ -42,14 +44,15 @@ function AppealFileSubmission({ allowUpload, configId }: AppealFileSubmissionTyp
           },
         });
       } else {
-        submitFile(files)
-          .then(async ({ status }: any) => {
+        submitFile(files, true) // TODO: find way to set isAppeal to true
+          .then(async ({ status, id }: any) => {
             if (status === "success") {
+              setNewFileSubmissionId(id);
               dispatch({
                 type: "showNotification",
                 payload: {
-                  title: "Appeal Submitted",
-                  message: "Your appeal will be reviewed.",
+                  title: "Upload success",
+                  message: "Submission files for appeal uploaded.",
                   success: true,
                 },
               });
@@ -58,7 +61,7 @@ function AppealFileSubmission({ allowUpload, configId }: AppealFileSubmissionTyp
           .catch((error) => {
             dispatch({
               type: "showNotification",
-              payload: { title: "Appeal cannot be submitted", message: error.message, success: false },
+              payload: { title: "Failed to upload submission files", message: error.message, success: false },
             });
           });
       }
@@ -106,17 +109,18 @@ interface ButtonProps {
   comments: string; // The text message sent to the TA when submitting the appeal
   userId: number;
   assignmentConfigId: number;
+  newFileSubmissionId: number | null;
 }
 
 /**
  * Returns a appeal submission button
  */
-function Button({ userId, assignmentConfigId, comments }: ButtonProps) {
-  // TODO(BRYAN): Investigate whether the new Date() will count the time when the page is opened OR when the button is pressed
-  const now = new Date();
-
+function Button({ userId, assignmentConfigId, comments, newFileSubmissionId }: ButtonProps) {
   const [createAppeal] = useMutation(CREATE_APPEAL);
   const [createAppealMessage] = useMutation(CREATE_APPEAL_MESSAGE);
+
+  const dispatch = useLayoutDispatch();
+  const router = useRouter();
 
   return (
     <div>
@@ -127,8 +131,20 @@ function Button({ userId, assignmentConfigId, comments }: ButtonProps) {
           if (comments === null || comments === "") {
             alert("Please Fill All Required Field");
           } else {
-            // TODO(BRYAN): Add error checking + Notification
-            const { data } = await createAppeal({
+            // Let student double check if they included submission file
+            if (
+              newFileSubmissionId === null &&
+              !confirm("You are filing this appeal without submission file(s). Are you sure?")
+            ) {
+              return;
+            }
+
+            const now = new Date();
+
+            // TODO(Owen): Add submission validation logic
+            // TODO(Owen): check current time against appeal stop time
+
+            const appealData = await createAppeal({
               variables: {
                 input: {
                   assignmentConfigId,
@@ -136,20 +152,59 @@ function Button({ userId, assignmentConfigId, comments }: ButtonProps) {
                   status: "PENDING",
                   updatedAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
                   userId,
+                  newFileSubmissionId,
                 },
               },
             });
+            if (appealData.errors) {
+              // TODO: add create error checking
+              dispatch({
+                type: "showNotification",
+                payload: {
+                  title: "Appeal submitted",
+                  message: "Your appeal will be reviewed.",
+                  success: false,
+                },
+              });
+              return;
+            }
 
-            createAppealMessage({
+            const appealMessageData = await createAppealMessage({
               variables: {
                 input: {
                   message: comments,
                   senderId: userId,
-                  appealId: data.createAppeal.id,
+                  appealId: appealData.data.createAppeal.id,
                   createdAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
                 },
               },
             });
+            if (appealMessageData.errors) {
+              // TODO: add create error checking
+              dispatch({
+                type: "showNotification",
+                payload: {
+                  title: "Appeal submitted",
+                  message: "Your appeal will be reviewed.",
+                  success: false,
+                },
+              });
+              return;
+            }
+
+            // Notify success
+            dispatch({
+              type: "showNotification",
+              payload: {
+                title: "Appeal submitted",
+                message: "Your appeal will be reviewed.",
+                success: true,
+              },
+            });
+
+            // Redirect to appeal page
+            // router.push(`/assignments/${assignmentConfigId}`);
+            router.push(`/appeals/${appealData.data.createAppeal.id}`);
           }
         }}
       >
@@ -192,6 +247,7 @@ type AppealAcceptProps = {
  */
 function AppealAccept({ userId, assignmentId, numAppealsLeft, condition }: AppealAcceptProps) {
   const [comments, setComments] = useState("");
+  const [newFileSubmissionId, setNewFileSubmissionId] = useState<number | null>(null);
 
   return (
     <div>
@@ -221,7 +277,12 @@ function AppealAccept({ userId, assignmentId, numAppealsLeft, condition }: Appea
           find out the fixed codes automatically.
         </p>
         <div className="bg-white p-4 rounded-md">
-          <AppealFileSubmission allowUpload={true} configId={1} />
+          {/* TODO: process submission here */}
+          <AppealFileSubmission
+            allowUpload={true}
+            configId={assignmentId}
+            setNewFileSubmissionId={setNewFileSubmissionId}
+          />
         </div>
       </div>
       {/* End of Upload Fixed Code */}
@@ -241,10 +302,20 @@ function AppealAccept({ userId, assignmentId, numAppealsLeft, condition }: Appea
                 Your have got Full Mark. Are you sure you wish to submit a grade appeal?
               </p>
             </div>
-            <Button userId={userId} assignmentConfigId={assignmentId} comments={comments} />
+            <Button
+              userId={userId}
+              assignmentConfigId={assignmentId}
+              comments={comments}
+              newFileSubmissionId={newFileSubmissionId}
+            />
           </div>
         ) : (
-          <Button userId={userId} assignmentConfigId={assignmentId} comments={comments} />
+          <Button
+            userId={userId}
+            assignmentConfigId={assignmentId}
+            comments={comments}
+            newFileSubmissionId={newFileSubmissionId}
+          />
         )}
       </div>
     </div>
@@ -322,16 +393,18 @@ function AppealSubmission({ userId, assignmentId, numAppealsLeft, appealDetailsD
   if (loading) condition = Condition.Loading;
   else if (!submissionsData || submissionsData?.submissions.length === 0) {
     condition = Condition.NotSubmitted;
-  } else if (submissionsData?.submissions[0].reports.length === 0) {
-    condition = Condition.Processing;
+    // } else if (submissionsData?.submissions[0].reports.length === 0) {
+    //   condition = Condition.Processing;
   } else if (numAppealsLeft === 0) {
     condition = Condition.NoAppealLeft;
   } else if (latestStatus === AppealStatus.Pending) {
     condition = Condition.Pending;
   } else {
-    const score = submissionsData?.submissions[0].reports[0].grade.details.accScore;
-    const maxScore = submissionsData?.submissions[0].reports[0].grade.details.accTotal;
-    score && maxScore && score === maxScore ? (condition = Condition.FullMark) : (condition = Condition.NotFullMark);
+    // const score = submissionsData?.submissions[0].reports[0].grade.details.accScore;
+    // const maxScore = submissionsData?.submissions[0].reports[0].grade.details.accTotal;
+    // score && maxScore && score === maxScore ? (condition = Condition.FullMark) : (condition = Condition.NotFullMark);
+    condition = Condition.FullMark;
+    // TODO: fix no report lead to error
   }
 
   // Check the condition and decide if appeal is allowed
@@ -346,11 +419,11 @@ function AppealSubmission({ userId, assignmentId, numAppealsLeft, appealDetailsD
       acceptAppeal = false;
       break;
     }
-    case Condition.Processing: {
-      errorMessage = "Submission is still being processed.";
-      acceptAppeal = false;
-      break;
-    }
+    // case Condition.Processing: {
+    //   errorMessage = "Submission is still being processed.";
+    //   acceptAppeal = false;
+    //   break;
+    // }
     case Condition.Pending: {
       errorMessage = "Another appeal is still pending.";
       acceptAppeal = false;

@@ -15,6 +15,7 @@ interface Submission {
   size: number;
   assignment_config_id: number;
   user_id: number;
+  isAppeal: boolean;
 }
 
 async function submit(cookie: string, submission: Submission) {
@@ -40,6 +41,7 @@ async function submit(cookie: string, submission: Submission) {
       },
     });
     if (!errors) {
+      console.log(data);
       return data.createSubmission;
     } else {
       throw new Error(errors[0].message);
@@ -83,10 +85,12 @@ export default async function (req, res) {
               size,
               checksum: sha256File(savedPath),
               user_id: parseInt(user, 10),
+              isAppeal: fields.isAppeal === "true" ? true : false,
             };
-            await submit(req.headers.cookie, submission);
+            const { createSubmission } = await submit(req.headers.cookie, submission);
             res.json({
               status: "success",
+              id: createSubmission.id,
             });
           } else {
             if (files.hash !== fields[`checksum;${files.name}`]) {
@@ -106,6 +110,7 @@ export default async function (req, res) {
               size: files.size,
               checksum: files.hash,
               user_id: parseInt(user, 10),
+              isAppeal: fields.isAppeal === "true" ? true : false,
             };
             try {
               copyFile(files.path, `${process.env.NEXT_PUBLIC_UPLOAD_DIR}/${destinationFilename}`, async (err) => {

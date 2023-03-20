@@ -12,7 +12,7 @@ interface ZincContextState {
   useSidebar: () => any;
   visibleCourses: Array<number>;
   setVisibleCourses: React.Dispatch<React.SetStateAction<number[]>>;
-  submitFile: (files) => Promise<void>;
+  submitFile: (files, isAppeal) => Promise<void>;
 }
 
 interface ZincProviderProps {
@@ -58,10 +58,11 @@ export const ZincProvider = ({ children, user, semester }: ZincProviderProps) =>
   const [visibleCourses, setVisibleCourses] = useState<Array<number>>([]);
   const activeSemester = semesterId ? parseInt(semesterId as string, 10) : semester;
 
-  const submitFile = async (files) => {
+  const submitFile = async (files, isAppeal: boolean = false) => {
     const form = new FormData();
     const { assignmentId } = router.query;
     form.append("assignmentConfigId", assignmentId as string);
+    form.append("isAppeal", isAppeal ? "true" : "false");
     if (
       files.length > 1 ||
       (files.length === 1 && supportedCodeSubmissionExtensions.includes(files[0].name.split(".").pop()))
