@@ -44,7 +44,7 @@ function AppealFileSubmission({ allowUpload, configId, setNewFileSubmissionId }:
           },
         });
       } else {
-        submitFile(files, true) // TODO: find way to set isAppeal to true
+        submitFile(files, true)
           .then(async ({ status, id }: any) => {
             if (status === "success") {
               setNewFileSubmissionId(id);
@@ -143,6 +143,19 @@ function Button({ userId, assignmentConfigId, comments, newFileSubmissionId }: B
 
             // TODO(Owen): Add submission validation logic
             // TODO(Owen): check current time against appeal stop time
+            if (false) {
+              dispatch({
+                type: "showNotification",
+                payload: {
+                  title: "Appeal deadline passed",
+                  message: "This appeal will not be submitted.",
+                  success: false,
+                },
+              });
+              router.push(`assignments/${assignmentConfigId}`);
+            }
+
+            // TODO(Owen): Investigate combining the 2 appeal create mutations
 
             const appealData = await createAppeal({
               variables: {
@@ -161,8 +174,8 @@ function Button({ userId, assignmentConfigId, comments, newFileSubmissionId }: B
               dispatch({
                 type: "showNotification",
                 payload: {
-                  title: "Appeal submitted",
-                  message: "Your appeal will be reviewed.",
+                  title: "Appeal failed",
+                  message: "Failed to submit appeal. Please try again.",
                   success: false,
                 },
               });
@@ -184,8 +197,8 @@ function Button({ userId, assignmentConfigId, comments, newFileSubmissionId }: B
               dispatch({
                 type: "showNotification",
                 payload: {
-                  title: "Appeal submitted",
-                  message: "Your appeal will be reviewed.",
+                  title: "Appeal failed",
+                  message: "Failed to submit appeal. Please try again.",
                   success: false,
                 },
               });
