@@ -444,7 +444,8 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
   )[] = mergeDataToActivityLogList({ appealAttempt: appealAttempts, appealChangeLogData, submissionData });
 
   // Get number of appeal attempt left
-  const appealAttemptLeft: number = appealConfigData.assignmentConfig.appealLimits - appealAttempts.length;
+  let appealAttemptLeft: number = appealConfigData.assignmentConfig.appealLimits - appealAttempts.length;
+  if (appealAttemptLeft < 0) appealAttemptLeft = 0;
 
   return (
     <div className="flex-1 overflow-y-auto">
