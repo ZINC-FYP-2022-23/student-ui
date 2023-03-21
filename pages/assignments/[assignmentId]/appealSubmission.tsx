@@ -12,6 +12,7 @@ import { useMutation, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "@mantine/core";
 import { zonedTimeToUtc } from "date-fns-tz";
+import { config } from "localforage";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -117,7 +118,6 @@ interface ButtonProps {
  */
 function Button({ userId, assignmentConfigId, comments, newFileSubmissionId }: ButtonProps) {
   const [createAppeal] = useMutation(CREATE_APPEAL);
-  const [createAppealMessage] = useMutation(CREATE_APPEAL_MESSAGE);
 
   const dispatch = useLayoutDispatch();
   const router = useRouter();
@@ -141,21 +141,18 @@ function Button({ userId, assignmentConfigId, comments, newFileSubmissionId }: B
 
             const now = new Date();
 
-            // TODO(Owen): Add submission validation logic
             // TODO(Owen): check current time against appeal stop time
-            if (false) {
-              dispatch({
-                type: "showNotification",
-                payload: {
-                  title: "Appeal deadline passed",
-                  message: "This appeal will not be submitted.",
-                  success: false,
-                },
-              });
-              router.push(`assignments/${assignmentConfigId}`);
-            }
-
-            // TODO(Owen): Investigate combining the 2 appeal create mutations
+            // if (now.getTime() > config.time) {
+            //   dispatch({
+            //     type: "showNotification",
+            //     payload: {
+            //       title: "Appeal deadline passed",
+            //       message: "This appeal will not be submitted.",
+            //       success: false,
+            //     },
+            //   });
+            //   router.push(`/assignments/${assignmentConfigId}`);
+            // }
 
             const appealData = await createAppeal({
               variables: {
@@ -166,34 +163,19 @@ function Button({ userId, assignmentConfigId, comments, newFileSubmissionId }: B
                   updatedAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
                   userId,
                   newFileSubmissionId,
+                  assignment_appeal_messages: {
+                    data: [
+                      {
+                        message: comments,
+                        senderId: userId,
+                        createdAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
+                      },
+                    ],
+                  },
                 },
               },
             });
             if (appealData.errors) {
-              // TODO: add create error checking
-              dispatch({
-                type: "showNotification",
-                payload: {
-                  title: "Appeal failed",
-                  message: "Failed to submit appeal. Please try again.",
-                  success: false,
-                },
-              });
-              return;
-            }
-
-            const appealMessageData = await createAppealMessage({
-              variables: {
-                input: {
-                  message: comments,
-                  senderId: userId,
-                  appealId: appealData.data.createAppeal.id,
-                  createdAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
-                },
-              },
-            });
-            if (appealMessageData.errors) {
-              // TODO: add create error checking
               dispatch({
                 type: "showNotification",
                 payload: {
@@ -290,7 +272,6 @@ function AppealAccept({ userId, assignmentId, numAppealsLeft, condition }: Appea
           find out the fixed codes automatically.
         </p>
         <div className="bg-white p-4 rounded-md">
-          {/* TODO: process submission here */}
           <AppealFileSubmission
             allowUpload={true}
             configId={assignmentId}
