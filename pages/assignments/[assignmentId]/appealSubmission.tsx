@@ -3,7 +3,11 @@ import RichTextEditor from "@/components/RichTextEditor";
 import { LayoutProvider, useLayoutDispatch } from "@/contexts/layout";
 import { useZinc } from "@/contexts/zinc";
 import { CREATE_APPEAL, CREATE_APPEAL_MESSAGE } from "@/graphql/mutations/appealMutations";
-import { GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID, GET_APPEAL_CONFIG } from "@/graphql/queries/appealQueries";
+import {
+  GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID,
+  GET_APPEAL_CONFIG,
+  GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID,
+} from "@/graphql/queries/appealQueries";
 import { SUBMISSION_SUBSCRIPTION } from "@/graphql/queries/user";
 import { Layout } from "@/layout";
 import { initializeApollo } from "@/lib/apollo";
@@ -25,7 +29,7 @@ interface AppealFileSubmissionType {
 /**
  * Returns a component that allows file to be submitted along with the appeal
  */
-// TODO(BRYAN): Investigate the usage of `configId`
+// TODO(BRYAN): Enable File Submission + Investigate the usage of `configId`
 function AppealFileSubmission({ allowUpload, configId }: AppealFileSubmissionType) {
   const { user, submitFile } = useZinc();
   const dispatch = useLayoutDispatch();
@@ -113,7 +117,6 @@ interface ButtonProps {
  * Returns a appeal submission button
  */
 function Button({ userId, assignmentConfigId, comments }: ButtonProps) {
-  // TODO(BRYAN): Investigate whether the new Date() will count the time when the page is opened OR when the button is pressed
   const now = new Date();
 
   const [createAppeal] = useMutation(CREATE_APPEAL);
@@ -128,7 +131,6 @@ function Button({ userId, assignmentConfigId, comments }: ButtonProps) {
           if (comments === null || comments === "") {
             alert("Please Fill All Required Field");
           } else {
-            // TODO(BRYAN): Add error checking + Notification
             const { data } = await createAppeal({
               variables: {
                 input: {
@@ -151,6 +153,8 @@ function Button({ userId, assignmentConfigId, comments }: ButtonProps) {
                 },
               },
             });
+
+            // TODO(BRYAN): Submit appeal will return to the assignment page if successful
           }
         }}
       >
@@ -266,9 +270,16 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
   } = useSubscription<{ submissions: Submission[] }>(SUBMISSION_SUBSCRIPTION, {
     variables: { userId, assignmentConfigId: assignmentId },
   });
+  const {
+    data: appealChangeLogData,
+    loading: appealChangeLogLoading,
+    error: appealChangeLogError,
+  } = useSubscription(GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID, {
+    variables: { userId, assignmentConfigId: assignmentId },
+  });
 
   // Display Loading if data fetching is still in-progress
-  if (appealConfigLoading || appealDetailsLoading || submissionLoading) {
+  if (appealConfigLoading || appealDetailsLoading || submissionLoading || appealChangeLogLoading) {
     return <DisplayLoading assignmentId={assignmentId} />;
   }
 
@@ -281,6 +292,9 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   } else if (submissionsError) {
     const errorMessage = "Unable to Fetch submission details with `SUBMISSION_SUBSCRIPTION`";
+    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+  } else if (appealChangeLogError) {
+    const errorMessage = "Unable to Fetch submission details with `GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID`";
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   } else if (!appealConfigData.assignmentConfig) {
     // Error if `assignmentConfig` is undefined
@@ -325,8 +339,43 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
 
   // Determine whether student got full mark in the latest submission
   let isFullMark: boolean = false;
-  const score = submissionsData?.submissions[0].reports[0].grade.details.accScore;
+  // Get the latest score
+  let score: number = -1;
+  // 1. Get score from latest, non-appeal submission
+  let cont: boolean = true;
+  for (let i = 0; submissionsData && cont && i < submissionsData.submissions.length; i++) {
+    cont = false;
+    for (let j = 0; j < appealDetailsData.appeals.length; j++) {
+      if (submissionsData.submissions[i].id == appealDetailsData.appeals[j].newFileSubmissionId) {
+        cont = true;
+        break;
+      }
+    }
+    if (!cont) {
+      score = submissionsData.submissions[i].reports[0].grade.score;
+      break;
+    }
+  }
+  // 2. Replace with score from appeal or `SCORE` change log (if any)
+  const latestAppealUpdateDate: Date = new Date(appealDetailsData.appeals[0].updatedAt);
+  for (let i = 0; i < appealChangeLogData.changeLogs.length; i++) {
+    const logDate: Date = new Date(appealChangeLogData.changeLogs[i].createdAt);
+    if (
+      logDate < latestAppealUpdateDate &&
+      appealDetailsData.appeals[0].latestStatus === "ACCEPTED" &&
+      appealDetailsData.appeals[0].newFileSubmissionId &&
+      appealDetailsData.appeals[0].submission &&
+      appealDetailsData.appeals[0].submission.reports.length > 0
+    ) {
+      score = appealDetailsData.appeals[0].submission.reports[0].grade.score;
+      break;
+    } else if (appealChangeLogData.changeLogs[i].type === "SCORE") {
+      score = appealChangeLogData.changeLogs[i].updatedState.replace(/[^0-9]/g, "");
+      break;
+    }
+  }
   const maxScore = submissionsData?.submissions[0].reports[0].grade.details.accTotal;
+
   if (score == maxScore) isFullMark = true;
 
   return (

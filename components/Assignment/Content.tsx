@@ -402,7 +402,9 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
     data: appealChangeLogData,
     loading: appealChangeLogLoading,
     error: appealChangeLogError,
-  } = useSubscription(GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID, { variables: { assignmentConfigId: content.id } });
+  } = useSubscription(GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID, {
+    variables: { userId: user, assignmentConfigId: content.id },
+  });
   const {
     data: appealConfigData,
     loading: appealConfigLoading,
@@ -445,26 +447,37 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
 
   // Get the latest score
   let score: number = -1;
-  for (let i = 0; i < appealChangeLogData.changeLogs.length; i++) {
-    // Use the latest score change
-    if (appealChangeLogData.changeLogs[i].type === "SCORE") {
-      score = appealChangeLogData.changeLogs[i].updatedState.replace(/[^0-9]/g, "");
-      break;
-    }
-    // Use the new file submission score submitted with the appeal
-    let changeLogAppealId: number = appealChangeLogData.changeLogs.appealId;
+  // 1. Get score from latest, non-appeal submission
+  let cont: boolean = true;
+  for (let i = 0; submissionData && cont && i < submissionData.submissions.length; i++) {
+    cont = false;
     for (let j = 0; j < appealAttempts.length; j++) {
-      if (
-        appealAttempts[j].id === changeLogAppealId &&
-        appealAttempts[j].latestStatus === AppealStatus.Accept &&
-        appealChangeLogData.changeLogs[i].type === "APPEAL_STATUS" &&
-        appealChangeLogData.changeLogs[i].updatedState === "[{'status':ACCEPTED}]" &&
-        appealsDetailsData.appeals[j].submission &&
-        appealsDetailsData.appeals[j].submission.reports.length > 0
-      ) {
-        score = appealsDetailsData.appeals[j].submission.reports[0].grade.score;
+      if (submissionData.submissions[i].id == appealAttempts[j].newFileSubmissionId) {
+        cont = true;
         break;
       }
+    }
+    if (!cont) {
+      score = submissionData.submissions[i].reports[0].grade.score;
+      break;
+    }
+  }
+  // 2. Replace with score from appeal or `SCORE` change log (if any)
+  const latestAppealUpdateDate: Date = new Date(appealAttempts[0].updatedAt);
+  for (let i = 0; i < appealChangeLogData.changeLogs.length; i++) {
+    const logDate: Date = new Date(appealChangeLogData.changeLogs[i].createdAt);
+    if (
+      logDate < latestAppealUpdateDate &&
+      appealAttempts[0].latestStatus === AppealStatus.Accept &&
+      appealAttempts[0].newFileSubmissionId &&
+      appealsDetailsData.appeals[0].submission &&
+      appealsDetailsData.appeals[0].submission.reports.length > 0
+    ) {
+      score = appealsDetailsData.appeals[0].submission.reports[0].grade.score;
+      break;
+    } else if (appealChangeLogData.changeLogs[i].type === "SCORE") {
+      score = appealChangeLogData.changeLogs[i].updatedState.replace(/[^0-9]/g, "");
+      break;
     }
   }
 

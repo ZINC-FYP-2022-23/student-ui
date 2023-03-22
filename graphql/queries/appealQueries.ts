@@ -27,22 +27,6 @@ export const GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID = gql`
             grade
           }
         }
-        change_logs(
-          where: { assignmentConfigId: { _eq: $assignmentConfigId }, userId: { _eq: $userId } }
-          order_by: { createdAt: desc }
-        ) {
-          id
-          appealId
-          assignmentConfigId
-          type
-          updatedState
-          originalState
-          createdAt
-          initiatedBy
-          reason
-          reportId
-          submissionId
-        }
       }
       submission {
         reports(order_by: { createdAt: desc }, limit: 1) {
@@ -54,8 +38,11 @@ export const GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID = gql`
 `;
 
 export const GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID = gql`
-  subscription getChangeLogs($assignmentConfigId: bigint!) {
-    changeLogs(where: { assignmentConfigId: { _eq: $assignmentConfigId } }, order_by: { createdAt: desc }) {
+  subscription getChangeLogs($userId: bigint!, $assignmentConfigId: bigint!) {
+    changeLogs(
+      where: { userId: { _eq: $userId }, assignmentConfigId: { _eq: $assignmentConfigId } }
+      order_by: { createdAt: desc }
+    ) {
       appealId
       assignmentConfigId
       createdAt
