@@ -7,8 +7,8 @@ import { GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID, GET_APPEAL_CONFIG } from "@/graph
 import { SUBMISSION_SUBSCRIPTION } from "@/graphql/queries/user";
 import { Layout } from "@/layout";
 import { initializeApollo } from "@/lib/apollo";
-import { Submission, AppealStatus } from "@/types";
-import { useMutation, useSubscription } from "@apollo/client";
+import { Submission } from "@/types";
+import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "@mantine/core";
 import { zonedTimeToUtc } from "date-fns-tz";
@@ -30,8 +30,8 @@ interface AppealFileSubmissionType {
 // TODO(BRYAN): Investigate the usage of `configId`
 function AppealFileSubmission({ allowUpload, configId, setNewFileSubmissionId }: AppealFileSubmissionType) {
   const { user, submitFile } = useZinc();
-  // const [updateSubmissionNoti] = useMutation(UPDATE_SUBMISSION_NOTI)
   const dispatch = useLayoutDispatch();
+
   const onDrop = useCallback(
     (files) => {
       if (files.length === 0) {
@@ -68,6 +68,7 @@ function AppealFileSubmission({ allowUpload, configId, setNewFileSubmissionId }:
     },
     [configId],
   );
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: ".h,.cpp,.rar,.zip,application/octet-stream,application/zip,application/x-zip,application/x-zip-compressed",
@@ -208,239 +209,176 @@ function Button({ userId, assignmentConfigId, comments, newFileSubmissionId }: B
   );
 }
 
-/*  Possible values for type Condition:
- *   Loading: The page is loading information
- *   NotSubmitted: The student has not submitted anything yet for the assignment
- *   Processing: The system is still processing the assignment
- *   Pending: The latest appeal is still pending. Student should not be able to submit another appeal before the first one is decided.
- *   NoAppealLeft: The number of appeal attempts left is zero
- *   FullMark: The student got full mark in the assignment
- *   NotFullMark: The student did NOT get full mark in the assignment
- *   Error: The condition is not determined. It is a code problem.
- */
-enum Condition {
-  Unknown,
-  Loading,
-  NotSubmitted,
-  Processing,
-  Pending,
-  NoAppealLeft,
-  FullMark,
-  NotFullMark,
+interface DisplayLoadingProps {
+  assignmentId: number;
 }
 
-type AppealAcceptProps = {
-  userId: number;
-  assignmentId: number;
-  numAppealsLeft: number; // Number of available appeal attempts left. Value should be >=1.
-  condition: Condition; // Condition of the assignment submission. Should be either `FullMark` or `NotFullMark`
-};
-
 /**
- * The content of Appeal Submission Page. Shown only if a new appeal can be sent.
+ * Returns a loading page to show fetching data is in progress
  */
-function AppealAccept({ userId, assignmentId, numAppealsLeft, condition }: AppealAcceptProps) {
-  const [comments, setComments] = useState("");
-  const [newFileSubmissionId, setNewFileSubmissionId] = useState<number | null>(null);
-
+function DisplayLoading({ assignmentId }: DisplayLoadingProps) {
   return (
-    <div>
-      {/* Justification and Comments */}
-      <h1 className="mb-2 font-semibold text-2xl text-center">Submit Grade Appeal</h1>
-      <div className="my-6">
-        <h2 className="mb-2 font-semibold text-lg">
-          Justification and comments<span className="ml-0.5 text-red-600">*</span>
-        </h2>
-        {/* @ts-ignore */}
-        <RichTextEditor
-          id="rte"
-          value={comments}
-          onChange={setComments}
-          controls={[
-            ["bold", "italic", "underline"],
-            ["h1", "h2", "h3", "unorderedList", "orderedList"],
-          ]}
-        />
-        {/* End of Justification and Comments */}
-      </div>
-      {/* Start of Upload Fixed Code */}
-      <div className="my-6">
-        <h2 className="mb-2 font-semibold text-lg">Upload fixed code</h2>
-        <p className="mb-4 text-sm text-gray-600">
-          Do NOT upload specific fixed files. Upload as if you are submitting for the whole assignment. The system will
-          find out the fixed codes automatically.
-        </p>
-        <div className="bg-white p-4 rounded-md">
-          <AppealFileSubmission
-            allowUpload={true}
-            configId={assignmentId}
-            setNewFileSubmissionId={setNewFileSubmissionId}
-          />
-        </div>
-      </div>
-      {/* End of Upload Fixed Code */}
-      <div className="mt-8 flex flex-col items-center self-center">
-        <div className="flex items-center mb-4">
-          <FontAwesomeIcon icon={["far", "exclamation-triangle"]} className="text-orange-600 mr-2 text-lg" />
-          <p className="text-orange-600">
-            You have <strong>{numAppealsLeft}</strong> appeal(s) attempts left. You may not change any details after
-            submission.
-          </p>
-        </div>
-        {condition == Condition.FullMark ? (
-          <div className="flex flex-col items-center w-full py-3 bg-red-50 rounded-lg mt-4 mb-4">
-            <div className="flex items-center mt-4 mb-4">
-              <FontAwesomeIcon icon={["far", "octagon-exclamation"]} className="text-red-600 mr-2 text-lg" />
-              <p className="text-red-600 text-lg font-medium">
-                Your have got Full Mark. Are you sure you wish to submit a grade appeal?
-              </p>
+    <LayoutProvider>
+      <Layout title="Grade Appeal Details">
+        <main className="flex-1 flex bg-gray-200 overflow-y-auto">
+          <AssignmentSection />
+          <div className="p-5 flex flex-1 flex-col h-full w-max">
+            <div className="pb-3">
+              <div className="my-1 flex items-center">
+                {/* TODO(BRYAN): Query the assignment ID instead of passing its value from getServerSideProps(). */}
+                <Link href={`/assignments/${assignmentId}`}>
+                  <a className="max-w-max-content w-max px-3 py-1.5 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
+                    <FontAwesomeIcon icon={["far", "chevron-left"]} className="mr-2" />
+                    Back
+                  </a>
+                </Link>
+                <h1 className="flex-1 font-semibold text-2xl text-center">Grade Appeal</h1>
+              </div>
+              <div>Loading Data...</div>
             </div>
-            <Button
-              userId={userId}
-              assignmentConfigId={assignmentId}
-              comments={comments}
-              newFileSubmissionId={newFileSubmissionId}
-            />
           </div>
-        ) : (
-          <Button
-            userId={userId}
-            assignmentConfigId={assignmentId}
-            comments={comments}
-            newFileSubmissionId={newFileSubmissionId}
-          />
-        )}
-      </div>
-    </div>
+        </main>
+      </Layout>
+    </LayoutProvider>
   );
 }
 
-type AppealRejectProps = {
-  message: String; // The error message shown to user for rejecting an appeal submission
-};
+interface DisplayErrorProps {
+  assignmentId: number;
+  errorMessage: string; // Message shown to the user when encountering an error
+}
 
 /**
- * The error message for the Appeal Submission Page. Shown only if a new appeal CANNOT be sent
+ * Returns an error page
  */
-function AppealReject({ message }: AppealRejectProps) {
+function DisplayError({ assignmentId, errorMessage }: DisplayErrorProps) {
   return (
-    <div>
-      <div className="my-6 mt-8 flex flex-col items-center self-center mb-4">
-        <Alert
-          icon={<FontAwesomeIcon icon={["far", "circle-exclamation"]} />}
-          title="Appeal Unavailable"
-          color="red"
-          variant="filled"
-        >
-          {"You are not allowed to submit an appeal due to the following reason: "}
-          <br />
-          <strong>{message}</strong>
-        </Alert>
-      </div>
-    </div>
+    <LayoutProvider>
+      <Layout title="Grade Appeal Submission">
+        <main className="flex-1 flex bg-gray-200">
+          <AssignmentSection />
+          <div className="p-5 flex flex-1 flex-col overflow-y-auto">
+            <Link href={`/assignments/${assignmentId}`}>
+              <a className="max-w-max-content w-max px-3 py-1.5 mb-3 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
+                <FontAwesomeIcon icon={["far", "chevron-left"]} className="mr-2" />
+                Back
+              </a>
+            </Link>
+            <div>
+              <div className="my-6 mt-8 flex flex-col items-center self-center mb-4">
+                <Alert
+                  icon={<FontAwesomeIcon icon={["far", "circle-exclamation"]} />}
+                  title="Appeal Unavailable"
+                  color="red"
+                  variant="filled"
+                >
+                  <strong>{errorMessage}</strong>
+                </Alert>
+              </div>
+            </div>
+          </div>
+        </main>
+      </Layout>
+    </LayoutProvider>
   );
 }
 
 interface AppealSubmissionProps {
   userId: number;
   assignmentId: number;
-  numAppealsLeft: number; // The number of available appeal attempts left
-  appealDetailsData: any; // Raw data on Appeal Details  retrieved via GraphQL Query
 }
 
 /**
  * The Appeal Submission page
  */
-function AppealSubmission({ userId, assignmentId, numAppealsLeft, appealDetailsData }: AppealSubmissionProps) {
-  let errorMessage: String = "";
-  let acceptAppeal: boolean;
+function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
+  const [comments, setComments] = useState("");
+  const [newFileSubmissionId, setNewFileSubmissionId] = useState<number | null>(null);
+  const now = new Date();
 
-  // GraphQL Subscription
-  const { loading, data: submissionsData } = useSubscription<{ submissions: Submission[] }>(SUBMISSION_SUBSCRIPTION, {
-    variables: {
-      userId,
-      assignmentConfigId: assignmentId,
-    },
+  // Fetch data with GraphQL
+  const {
+    data: appealConfigData,
+    loading: appealConfigLoading,
+    error: appealConfigError,
+  } = useQuery(GET_APPEAL_CONFIG, { variables: { assignmentConfigId: assignmentId } });
+  const {
+    data: appealDetailsData,
+    loading: appealDetailsLoading,
+    error: appealDetailsError,
+  } = useSubscription(GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID, {
+    variables: { userId, assignmentConfigId: assignmentId },
+  });
+  const {
+    data: submissionsData,
+    loading: submissionLoading,
+    error: submissionsError,
+  } = useSubscription<{ submissions: Submission[] }>(SUBMISSION_SUBSCRIPTION, {
+    variables: { userId, assignmentConfigId: assignmentId },
   });
 
-  // Get the latest appeal status of the newest appeal
-  let latestStatus: AppealStatus | null = null;
-  if (appealDetailsData.appeals[0]) {
-    switch (appealDetailsData.appeals[0].status) {
-      case "ACCEPTED":
-        latestStatus = AppealStatus.Accept;
-        break;
-      case "PENDING":
-        latestStatus = AppealStatus.Pending;
-        break;
-      case "REJECTED":
-        latestStatus = AppealStatus.Reject;
-        break;
-      default:
-        latestStatus = AppealStatus.Pending;
-    }
+  // Display Loading if data fetching is still in-progress
+  if (appealConfigLoading || appealDetailsLoading || submissionLoading) {
+    return <DisplayLoading assignmentId={assignmentId} />;
   }
 
-  // Determine the condition based on the database state
-  let condition: Condition = Condition.Unknown;
-  if (loading) condition = Condition.Loading;
-  else if (!submissionsData || submissionsData?.submissions.length === 0) {
-    condition = Condition.NotSubmitted;
-    // } else if (submissionsData?.submissions[0].reports.length === 0) {
-    //   condition = Condition.Processing;
-  } else if (numAppealsLeft === 0) {
-    condition = Condition.NoAppealLeft;
-  } else if (latestStatus === AppealStatus.Pending) {
-    condition = Condition.Pending;
-  } else {
-    // const score = submissionsData?.submissions[0].reports[0].grade.details.accScore;
-    // const maxScore = submissionsData?.submissions[0].reports[0].grade.details.accTotal;
-    // score && maxScore && score === maxScore ? (condition = Condition.FullMark) : (condition = Condition.NotFullMark);
-    condition = Condition.FullMark;
-    // TODO: fix no report lead to error
+  // Display error if it occurred
+  if (appealConfigError) {
+    const errorMessage = "Unable to Fetch appeal details with `GET_APPEAL_CONFIG`";
+    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+  } else if (appealDetailsError) {
+    const errorMessage = "Unable to Fetch appeal details with `GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID`";
+    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+  } else if (submissionsError) {
+    const errorMessage = "Unable to Fetch submission details with `SUBMISSION_SUBSCRIPTION`";
+    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+  } else if (!appealConfigData.assignmentConfig) {
+    // Error if `assignmentConfig` is undefined
+    const errorMessage = "`assignmentConfig` is not available";
+    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+  } else if (!appealConfigData.assignmentConfig.isAppealAllowed) {
+    // Check if the appeal submission is allowed
+    const errorMessage = "The assignment does not allow any appeals.";
+    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+  } else if (now < appealConfigData.assignmentConfig.appealStartAt) {
+    const errorMessage = "Time period for appeal submission has not started yet.";
+    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+  } else if (now > appealConfigData.assignmentConfig.appealStopAt) {
+    const errorMessage = "Time period for appeal submission has passed.";
+    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+  } else if (!submissionsData || submissionsData?.submissions.length === 0) {
+    // Error if there's no submission
+    const errorMessage = "You have not submitted anything yet for this assignment.";
+    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+  } else if (submissionsData?.submissions[0].reports.length === 0) {
+    // Error if submission is still being processed
+    const errorMessage =
+      "Submission is still being processed. Please wait for a few seconds and do not refresh the page.";
+    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+  } else if (
+    appealDetailsData.appeals &&
+    appealDetailsData.appeals[0] &&
+    appealDetailsData.appeals[0].status == "PENDING"
+  ) {
+    // Does not allow appeal submission if another appeal is `PENDING`
+    const errorMessage = "You are not allowed to submit a new appeal while having a pending appeal.";
+    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   }
 
-  // Check the condition and decide if appeal is allowed
-  switch (condition) {
-    case Condition.Loading: {
-      errorMessage = "Loading Data...";
-      acceptAppeal = false;
-      break;
-    }
-    case Condition.NotSubmitted: {
-      errorMessage = "You have not submitted anything yet.";
-      acceptAppeal = false;
-      break;
-    }
-    // case Condition.Processing: {
-    //   errorMessage = "Submission is still being processed.";
-    //   acceptAppeal = false;
-    //   break;
-    // }
-    case Condition.Pending: {
-      errorMessage = "Another appeal is still pending.";
-      acceptAppeal = false;
-      break;
-    }
-    case Condition.NoAppealLeft: {
-      errorMessage = "No more Appeal Attempts left.";
-      acceptAppeal = false;
-      break;
-    }
-    case Condition.FullMark: {
-      acceptAppeal = true;
-      break;
-    }
-    case Condition.NotFullMark: {
-      acceptAppeal = true;
-      break;
-    }
-    default: {
-      errorMessage = "Unknown Condition. Please check `appealSubmission.tsx`.";
-      acceptAppeal = false;
-      break;
-    }
+  // Get how many appeal attempts left that can be made
+  let numAppealsLeft: number = appealConfigData.assignmentConfig.appealLimits - appealDetailsData.appeals.length;
+
+  // New appeal cannot be submitted if numAppealsLeft < 1
+  if (numAppealsLeft < 1) {
+    const errorMessage = "You cannot submit anymore new appeals.";
+    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   }
+
+  // Determine whether student got full mark in the latest submission
+  let isFullMark: boolean = false;
+  const score = submissionsData?.submissions.filter((e) => !e.isAppeal)[0].reports[0].grade.details.accScore;
+  const maxScore = submissionsData?.submissions.filter((e) => !e.isAppeal)[0].reports[0].grade.details.accTotal;
+  if (score === maxScore) isFullMark = true;
 
   return (
     <LayoutProvider>
@@ -454,16 +392,74 @@ function AppealSubmission({ userId, assignmentId, numAppealsLeft, appealDetailsD
                 Back
               </a>
             </Link>
-            {acceptAppeal ? (
-              <AppealAccept
-                userId={userId}
-                assignmentId={assignmentId}
-                numAppealsLeft={numAppealsLeft}
-                condition={condition}
-              />
-            ) : (
-              <AppealReject message={errorMessage} />
-            )}
+            <>
+              {/* Justification and Comments */}
+              <h1 className="mb-2 font-semibold text-2xl text-center">Submit Grade Appeal</h1>
+              <div className="my-6">
+                <h2 className="mb-2 font-semibold text-lg">
+                  Justification and comments<span className="ml-0.5 text-red-600">*</span>
+                </h2>
+                {/* @ts-ignore */}
+                <RichTextEditor
+                  id="rte"
+                  value={comments}
+                  onChange={setComments}
+                  controls={[
+                    ["bold", "italic", "underline"],
+                    ["h1", "h2", "h3", "unorderedList", "orderedList"],
+                  ]}
+                />
+                {/* End of Justification and Comments */}
+              </div>
+              {/* Start of Upload Fixed Code */}
+              <div className="my-6">
+                <h2 className="mb-2 font-semibold text-lg">Upload fixed code</h2>
+                <p className="mb-4 text-sm text-gray-600">
+                  Do NOT upload specific fixed files. Upload as if you are submitting for the whole assignment. The
+                  system will find out the fixed codes automatically.
+                </p>
+                <div className="bg-white p-4 rounded-md">
+                  <AppealFileSubmission
+                    allowUpload={true}
+                    configId={assignmentId}
+                    setNewFileSubmissionId={setNewFileSubmissionId}
+                  />
+                </div>
+              </div>
+              {/* End of Upload Fixed Code */}
+              <div className="mt-8 flex flex-col items-center self-center w-full">
+                <div className="flex items-center mb-4">
+                  <FontAwesomeIcon icon={["far", "exclamation-triangle"]} className="text-orange-600 mr-2 text-lg" />
+                  <p className="text-orange-600">
+                    You have <strong>{numAppealsLeft}</strong> appeal(s) attempts left. You may not change any details
+                    after submission.
+                  </p>
+                </div>
+                {isFullMark ? (
+                  <div className="flex flex-col items-center w-full py-3 bg-red-50 rounded-lg mt-4 mb-4">
+                    <div className="flex items-center mt-4 mb-4">
+                      <FontAwesomeIcon icon={["far", "octagon-exclamation"]} className="text-red-600 mr-2 text-lg" />
+                      <p className="text-red-600 text-lg font-medium">
+                        Your have got Full Mark. Are you sure you wish to submit a grade appeal?
+                      </p>
+                    </div>
+                    <Button
+                      userId={userId}
+                      assignmentConfigId={assignmentId}
+                      comments={comments}
+                      newFileSubmissionId={newFileSubmissionId}
+                    />
+                  </div>
+                ) : (
+                  <Button
+                    userId={userId}
+                    assignmentConfigId={assignmentId}
+                    comments={comments}
+                    newFileSubmissionId={newFileSubmissionId}
+                  />
+                )}
+              </div>
+            </>
           </div>
         </main>
       </Layout>
@@ -474,37 +470,13 @@ function AppealSubmission({ userId, assignmentId, numAppealsLeft, appealDetailsD
 export const getServerSideProps: GetServerSideProps = async ({ req, query }) => {
   const userId = parseInt(req.cookies.user);
   const assignmentId = parseInt(query.assignmentId as string);
-
   const apolloClient = initializeApollo(req.headers.cookie as string);
-
-  /* GraphQL Queries */
-  const { data: appealDetailsData } = await apolloClient.query({
-    query: GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID,
-    variables: {
-      userId,
-      assignmentConfigId: assignmentId,
-    },
-  });
-
-  const { data: appealConfigData } = await apolloClient.query({
-    query: GET_APPEAL_CONFIG,
-    variables: {
-      assignmentConfigId: assignmentId,
-    },
-  });
-  /* End of GraphQL Queries */
-
-  let numAppealsLeft: number = -1;
-  if (appealConfigData && appealDetailsData)
-    numAppealsLeft = appealConfigData.assignmentConfig.appealLimits - appealDetailsData.appeals.length;
 
   return {
     props: {
       initialApolloState: apolloClient.cache.extract(),
       userId,
       assignmentId,
-      numAppealsLeft,
-      appealDetailsData,
     },
   };
 };

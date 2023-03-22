@@ -1,19 +1,25 @@
-import { useCallback } from "react";
+import {
+  GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID,
+  GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID,
+  GET_APPEAL_CONFIG,
+} from "@/graphql/queries/appealQueries";
+import { AppealAttempt, AppealLog, AppealStatus, ChangeLog, ChangeLogTypes, DisplayMessageType } from "@/types/appeal";
+import { AssignmentConfig, Grade, Submission as SubmissionType } from "@/types/tables";
+import { mergeDataToActivityLogList, transformToAppealAttempt } from "@/utils/appealUtils";
+import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Link from "next/link";
+import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
+import { useLayoutDispatch } from "../../contexts/layout";
 import { useZinc } from "../../contexts/zinc";
+import { SUBMISSION_SUBSCRIPTION } from "../../graphql/queries/user";
+import { AppealLogMessage } from "../Appeal/AppealLogMessage";
+import { AppealResult } from "../Appeal/AppealResult";
 import { Submission } from "../Submission";
 import { SubmissionCollectionStatus } from "../SubmissionCollectionStatus";
-import { useLayoutDispatch } from "../../contexts/layout";
-import { useSubscription } from "@apollo/client";
-import { SUBMISSION_SUBSCRIPTION } from "../../graphql/queries/user";
 import { SubmissionLoader } from "../SubmissionLoader";
-import Link from "next/link";
-import { AssignmentConfig, Grade, Submission as SubmissionType } from "@/types/tables";
-import { AppealResult } from "../Appeal/AppealResult";
-import { AppealLogMessage } from "../Appeal/AppealLogMessage";
-import { AppealAttempt, AppealStatus, AppealLog, DisplayMessageType, ChangeLog, ChangeLogTypes } from "@/types/appeal";
-import { sort, transformToAppealLog } from "@/utils/appealUtils";
+import { Alert } from "@mantine/core";
 // import { Notification, SubmissionNotification } from "../Notification";
 // import toast from "react-hot-toast";
 // import { useMutation} from "@apollo/client";
@@ -185,83 +191,68 @@ function AppealDetailsButton({ appealId }: { appealId: number }) {
 }
 
 interface GradePanelProps {
+  content: AssignmentConfig;
   assignmentId: number;
   finalGrade: Grade; // Final grade of the assignment submission
   appealAttemptLeft: number; // Number of appeals attempt that can be made left
-  appealId: number | null;
-  appealStatus: AppealStatus | null; // Latest status of the submitted appeal (if any)
+  appealAttempt: AppealAttempt; // The latest appeal attempt
+  appealConfigData; // Raw data of appeal configs
 }
 
 /**
  * Returns a component of a box that shows the Final Grade and Appeal Status (if any)
  */
-function GradePanel({ assignmentId, finalGrade, appealAttemptLeft, appealId, appealStatus }: GradePanelProps) {
-  let disabled = false;
-  if (appealAttemptLeft <= 0) disabled = true;
+function GradePanel({
+  content,
+  assignmentId,
+  finalGrade,
+  appealAttemptLeft,
+  appealAttempt,
+  appealConfigData,
+}: GradePanelProps) {
+  const appealId: number = appealAttempt.id;
+  const appealStatus: AppealStatus = appealAttempt.latestStatus; // Latest status of the submitted appeal (if any)
+  const now = new Date();
 
+  // Error if appealConfigData is undefined or null
+  if (!appealConfigData) {
+    const errorMessage = "Appeal Config Data is not available.";
+    return <DisplayError content={content} errorMessage={errorMessage} />;
+  } else if (!appealConfigData.assignmentConfig) {
+    const errorMessage = "Assignment configs are not available.";
+    return <DisplayError content={content} errorMessage={errorMessage} />;
+  }
+
+  // Check if new appeal can be submitted
+  let appealGradeButtonDisabled = false;
+  if (
+    appealAttemptLeft <= 0 ||
+    !appealConfigData.assignmentConfig.isAppealAllowed ||
+    now < appealConfigData.assignmentConfig.appealStartAt ||
+    now > appealConfigData.assignmentConfig.appealStopAt
+  )
+    appealGradeButtonDisabled = true;
+
+  // Handling color based on appeal status of the latest appeal
+  let backgroundColor: string = "";
+  let gradeTextColor: string = "";
+  let attemptLeftTextColor: string = "";
   switch (appealStatus) {
     case AppealStatus.Accept:
-      if (appealId != null) {
-        return (
-          <div className="w-full mt-4 py-3 flex flex-col items-center bg-green-50 rounded-lg">
-            <p className="text-green-800 font-medium">
-              Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
-            </p>
-            <AppealDetailsButton appealId={appealId} />
-            <AppealResult appealResult={appealStatus} />
-            <AppealGradeButton assignmentId={assignmentId} disabled={disabled} />
-            <p className="text-green-600 font-medium text-xs mt-2">Appeal Attempts Left: {appealAttemptLeft}</p>
-          </div>
-        );
-      } else {
-        return <p>Error: appealId is NULL while AppealStatus is pending</p>;
-      }
+      backgroundColor = "bg-green-50";
+      gradeTextColor = "text-green-800";
+      attemptLeftTextColor = "text-green-600";
       break;
 
     case AppealStatus.Reject:
-      if (appealId != null) {
-        return (
-          <div className="w-full mt-4 py-3 flex flex-col items-center bg-red-50 rounded-lg">
-            <p className="text-red-800 font-medium">
-              Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
-            </p>
-            <AppealDetailsButton appealId={appealId} />
-            <AppealResult appealResult={appealStatus} />
-            <AppealGradeButton assignmentId={assignmentId} disabled={disabled} />
-            <p className="text-red-600 font-medium text-xs mt-2">Appeal Attempts Left: {appealAttemptLeft}</p>
-          </div>
-        );
-      } else {
-        return <p>Error: appealId is NULL while AppealStatus is pending</p>;
-      }
+      backgroundColor = "bg-red-50";
+      gradeTextColor = "text-red-800";
+      attemptLeftTextColor = "text-red-600";
       break;
 
     case AppealStatus.Pending:
-      if (appealId != null) {
-        return (
-          <div className="w-full mt-4 py-3 flex flex-col items-center bg-yellow-50 rounded-lg">
-            <p className="text-yellow-800 font-medium">
-              Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
-            </p>
-            <AppealDetailsButton appealId={appealId} />
-            <AppealResult appealResult={appealStatus} />
-          </div>
-        );
-      } else {
-        return <p>Error: appealId is NULL while AppealStatus is pending</p>;
-      }
-      break;
-
-    case null:
-      return (
-        <div className="w-full mt-4 py-3 flex flex-col items-center bg-green-50 rounded-lg">
-          <p className="text-green-800 font-medium">
-            Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
-          </p>
-          <AppealGradeButton assignmentId={assignmentId} disabled={disabled} />
-          <p className="text-green-600 font-medium text-xs mt-2">Appeal Attempts Left: {appealAttemptLeft}</p>
-        </div>
-      );
+      backgroundColor = "bg-yellow-50";
+      gradeTextColor = "text-yellow-800";
       break;
 
     default:
@@ -272,109 +263,189 @@ function GradePanel({ assignmentId, finalGrade, appealAttemptLeft, appealId, app
       );
       break;
   }
+  const divCss = "w-full mt-4 py-3 flex flex-col items-center rounded-lg " + backgroundColor;
+  const gradeTextCss = "font-medium " + gradeTextColor;
+  const attemptLeftTextCss = "font-medium text-xs mt-2 " + attemptLeftTextColor;
+
+  return (
+    <div className={divCss}>
+      <p className={gradeTextCss}>
+        Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
+      </p>
+      <AppealDetailsButton appealId={appealId} />
+      <AppealResult appealResult={appealStatus} />
+      {/* Only allow students to submit an appeal if latest appeal has been accepted or rejected */}
+      {appealStatus != AppealStatus.Pending && (
+        <>
+          <AppealGradeButton assignmentId={assignmentId} disabled={appealGradeButtonDisabled} />
+          <p className={attemptLeftTextCss}>Appeal Attempts Left: {appealAttemptLeft}</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+interface DisplayLoadingProps {
+  content: AssignmentConfig; // Assignment the page is showing
+}
+
+/**
+ * Returns a loading page to show fetching data is in progress
+ */
+function DisplayLoading({ content }: DisplayLoadingProps) {
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <div>
+        <ul className="my-6">
+          <li>
+            <div className="flex flex-col items-center p-6 border bg-white mt-5 mx-5 rounded-lg overflow-y-scroll">
+              <div className="flex w-full justify-between">
+                <h1 className="text-lg font-light leading-5">{content.assignment.name}</h1>
+              </div>
+              <div className="mt-4 w-full">
+                <SubmissionCollectionStatus closed={content.submissionWindowPassed} dueAt={content.dueAt} />
+              </div>
+              <div className="my-6" dangerouslySetInnerHTML={{ __html: content.assignment.description }} />
+              <AssignmentSubmission
+                configId={content.id}
+                submissionClosed={content.submissionWindowPassed}
+                isOpen={content.openForSubmission}
+              />
+            </div>
+          </li>
+          <SubmissionLoader />
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+interface DisplayErrorProps {
+  content: AssignmentConfig;
+  errorMessage: string; // Message shown to the user when encountering an error
+}
+
+/**
+ * Returns an error page
+ */
+function DisplayError({ content, errorMessage }: DisplayErrorProps) {
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <div>
+        <ul className="my-6">
+          <li>
+            <div className="flex flex-col items-center p-6 border bg-white mt-5 mx-5 rounded-lg overflow-y-scroll">
+              <div className="flex w-full justify-between">
+                <h1 className="text-lg font-light leading-5">{content.assignment.name}</h1>
+              </div>
+              <div className="mt-4 w-full">
+                <SubmissionCollectionStatus closed={content.submissionWindowPassed} dueAt={content.dueAt} />
+              </div>
+              <div className="my-6" dangerouslySetInnerHTML={{ __html: content.assignment.description }} />
+              <AssignmentSubmission
+                configId={content.id}
+                submissionClosed={content.submissionWindowPassed}
+                isOpen={content.openForSubmission}
+              />
+            </div>
+          </li>
+          <div className="p-5 flex flex-1 flex-col h-full w-max">
+            <div className="pb-3">
+              <div className="my-6 mt-8 flex flex-col items-center self-center mb-4">
+                <Alert
+                  icon={<FontAwesomeIcon icon={["far", "circle-exclamation"]} />}
+                  title="Appeal Unavailable"
+                  color="red"
+                  variant="filled"
+                >
+                  {errorMessage}
+                </Alert>
+              </div>
+            </div>
+          </div>
+        </ul>
+      </div>
+    </div>
+  );
 }
 
 interface AssignmentContentProps {
   content: AssignmentConfig; // Assignment the page is showing
-  appealsDetailsData; // Raw data on Appeal Details  retrieved via GraphQL Query
-  appealConfigData; // Raw data on Appeal Configurations retrieved via GraphQL Query
-  appealChangeLogData; // Raw data on Appeal-related Change Logs retrieved via GraphQL Query
 }
 
 /**
  * Returns a component that show the core content of the assignment page
  */
-export function AssignmentContent({
-  content,
-  appealsDetailsData,
-  appealConfigData,
-  appealChangeLogData,
-}: AssignmentContentProps) {
+export function AssignmentContent({ content }: AssignmentContentProps) {
   const assignmentCreatedDate = new Date(content.createdAt);
   assignmentCreatedDate.setTime(assignmentCreatedDate.getTime() + 8 * 60 * 60 * 1000);
   const { user } = useZinc();
-  const { data, loading } = useSubscription<{ submissions: SubmissionType[] }>(SUBMISSION_SUBSCRIPTION, {
-    variables: {
-      userId: user,
-      assignmentConfigId: content.id,
-    },
+
+  // Fetch data with GraphQL
+  const {
+    data: submissionData,
+    loading: submissionLoading,
+    error: submissionError,
+  } = useSubscription<{ submissions: SubmissionType[] }>(SUBMISSION_SUBSCRIPTION, {
+    variables: { userId: user, assignmentConfigId: content.id },
   });
+  const {
+    data: appealsDetailsData,
+    loading: appealDetailsLoading,
+    error: appealDetailsError,
+  } = useSubscription(GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID, {
+    variables: { userId: user, assignmentConfigId: content.id },
+  });
+  const {
+    data: appealChangeLogData,
+    loading: appealChangeLogLoading,
+    error: appealChangeLogError,
+  } = useSubscription(GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID, { variables: { assignmentConfigId: content.id } });
+  const {
+    data: appealConfigData,
+    loading: appealConfigLoading,
+    error: appealConfigError,
+  } = useQuery(GET_APPEAL_CONFIG, { variables: { assignmentConfigId: content.id } });
 
+  // Display Loading if data fetching is still in-progress
+  if (submissionLoading || appealConfigLoading || appealDetailsLoading || appealChangeLogLoading) {
+    return <DisplayLoading content={content} />;
+  }
+
+  // Display Error if data cannot be fetched
+  if (submissionError) {
+    const errorMessage = "Unable to Fetch submission details with `SUBMISSION_SUBSCRIPTION`";
+    return <DisplayError content={content} errorMessage={errorMessage} />;
+  } else if (appealConfigError) {
+    const errorMessage = "Unable to Fetch appeal details with `GET_APPEAL_CONFIG`";
+    return <DisplayError content={content} errorMessage={errorMessage} />;
+  } else if (appealDetailsError) {
+    const errorMessage = "Unable to Fetch appeal details with `GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID`";
+    return <DisplayError content={content} errorMessage={errorMessage} />;
+  } else if (appealChangeLogError) {
+    const errorMessage = "Unable to Fetch appeal details with `GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID`";
+    return <DisplayError content={content} errorMessage={errorMessage} />;
+  }
+
+  // Get Final Grade
   let finalGrade: Grade | null = null;
-
-  if (data && data.submissions.length > 0 && data.submissions[0].reports.length > 0) {
-    finalGrade = data.submissions[0].reports[0].grade;
+  if (submissionData && submissionData.submissions.length > 0 && submissionData.submissions[0].reports.length > 0) {
+    finalGrade = submissionData.submissions[0].reports[0].grade;
   }
 
   // Translate `appealDetailsData` to `AppealAttempt[]`
-  let appealAttempts: AppealAttempt[] = [];
-  appealsDetailsData.appeals.forEach((appeal) => {
-    let latestStatus: AppealStatus = AppealStatus.Pending;
-    switch (appeal.status) {
-      case "ACCEPTED":
-        latestStatus = AppealStatus.Accept;
-        break;
-      case "PENDING":
-        latestStatus = AppealStatus.Pending;
-        break;
-      case "REJECTED":
-        latestStatus = AppealStatus.Reject;
-        break;
-      default:
-        latestStatus = AppealStatus.Pending;
-    }
-
-    appealAttempts.push({
-      id: appeal.id,
-      newFileSubmissionId: appeal.newFileSubmissionId || null,
-      assignmentConfigId: appeal.assignmentConfigId,
-      userId: appeal.userId,
-      createdAt: appeal.createdAt,
-      latestStatus: latestStatus,
-      updatedAt: appeal.updatedAt,
-    });
-  });
-
-  const appealAttemptLeft: number = appealConfigData.assignmentConfig.appealLimits - appealAttempts.length;
-
-  // Translate `appealChangeLogData` to `ChangeLog[]`
-  let changeLogs: ChangeLog[] = [];
-  appealChangeLogData.changeLogs.forEach((log) => {
-    // Assign a log type for each change log
-    let logType: ChangeLogTypes;
-    if (log.type == "APPEAL_STATUS") logType = ChangeLogTypes.APPEAL_STATUS;
-    else if (log.type == "SCORE") logType = ChangeLogTypes.SCORE;
-    else logType = ChangeLogTypes.SUBMISSION;
-
-    changeLogs.push({
-      id: log.id,
-      createdAt: log.createdAt,
-      type: logType,
-      originalState: log.originalState,
-      updatedState: log.updatedState,
-      initiatedBy: log.initiatedBy,
-      reason: log.reason || null,
-      appealId: log.appealId || null,
-    });
-  });
-
-  let appealId: number | null = null;
-  let appealStatus: AppealStatus | null = null;
-  if (appealAttempts.length > 0) {
-    appealId = appealAttempts[0].id;
-    appealStatus = appealAttempts[0].latestStatus;
-  }
+  let appealAttempts: AppealAttempt[] = transformToAppealAttempt({ appealsDetailsData });
 
   // Transform and sort the lists
-  let log: AppealLog[] = transformToAppealLog({ appeals: appealAttempts, changeLog: changeLogs });
   let message: (
     | (SubmissionType & { _type: "submission" })
     | (DisplayMessageType & { _type: "appealMessage" })
     | (AppealLog & { _type: "appealLog" })
-  )[] = sort({
-    submissions: data?.submissions,
-    appealLog: log,
-  });
+  )[] = mergeDataToActivityLogList({ appealAttempt: appealAttempts, appealChangeLogData, submissionData });
+
+  // Get number of appeal attempt left
+  let appealAttemptLeft: number = appealConfigData.assignmentConfig.appealLimits - appealAttempts.length;
+  if (appealAttemptLeft < 0) appealAttemptLeft = 0;
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -441,16 +512,17 @@ export function AssignmentContent({
               />
               {finalGrade && (
                 <GradePanel
+                  content={content}
                   assignmentId={content.id}
                   finalGrade={finalGrade}
                   appealAttemptLeft={appealAttemptLeft}
-                  appealId={appealId} // Link to the latest appeal
-                  appealStatus={appealStatus}
+                  appealAttempt={appealAttempts[0]}
+                  appealConfigData={appealConfigData}
                 />
               )}
             </div>
           </li>
-          {loading && <SubmissionLoader />}
+          {submissionLoading && <SubmissionLoader />}
           {message &&
             message.map((log) => {
               if (log._type === "appealLog") {

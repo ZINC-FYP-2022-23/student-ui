@@ -160,6 +160,7 @@ export type Submission = {
   extracted_path: string | null;
   fail_reason: string | null;
   id: number;
+  isAppeal: boolean;
   isLate: boolean;
   remarks: object | null;
   reports: Report[];
