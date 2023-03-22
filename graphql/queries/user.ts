@@ -71,8 +71,6 @@ export const GET_REPORT = gql`
   }
 `;
 
-// TODO(Bryan): Idea -> Also query appeals, so that it returns:
-// { submissions: SubmissionType[], appeals: <insert type here>[] }
 export const SUBMISSION_SUBSCRIPTION = gql`
   subscription submissionsForAssignment($userId: bigint, $assignmentConfigId: bigint!) {
     submissions(
