@@ -155,4 +155,44 @@ export const GET_APPEALS_BY_USER_ID_AND_ASSIGNMENT_ID = gql`
     }
   }
 `;
+
+export const GET_SUBMISSIONS_BY_ASSIGNMENT_AND_USER_ID = gql`
+  query getAssignmentSubmissions($assignmentConfigId: bigint!, $userId: bigint!) {
+    submissions(
+      where: { assignment_config_id: { _eq: $assignmentConfigId }, user_id: { _eq: $userId } }
+      order_by: { created_at: desc }
+    ) {
+      id
+      assignment_config_id
+      reports(order_by: { createdAt: desc }, limit: 1) {
+        id
+        grade
+      }
+    }
+  }
+`;
+
+export const GET_IDS_BY_APPEAL_ID = gql`
+  query getIds($appealId: bigint!) {
+    appeal(id: $appealId) {
+      id
+      assignmentConfigId
+      assignment_config {
+        id
+        assignment {
+          id
+          course_id
+        }
+      }
+      newFileSubmissionId
+      userId
+      submission {
+        reports(order_by: { createdAt: desc }, limit: 1) {
+          grade
+          id
+        }
+      }
+    }
+  }
+`;
 /* End of Queries used in `Appeal Details Page` */

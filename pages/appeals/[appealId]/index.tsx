@@ -12,6 +12,8 @@ import {
   GET_APPEAL_DETAILS_BY_APPEAL_ID,
   GET_APPEAL_MESSAGES,
   GET_ASSIGNMENT_CONFIG_ID_BY_APPEAL_ID,
+  GET_SUBMISSIONS_BY_ASSIGNMENT_AND_USER_ID,
+  GET_IDS_BY_APPEAL_ID,
 } from "@/graphql/queries/appealQueries";
 import { Layout } from "@/layout";
 import { AppealAttempt, AppealLog, AppealStatus, DisplayMessageType } from "@/types/appeal";
@@ -495,9 +497,27 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
     }
   }
 
+  const { data: idData } = await apolloClient.query<{ appeal: Appeal }>({
+    query: GET_IDS_BY_APPEAL_ID,
+    variables: {
+      appealId: appealId,
+    },
+  });
+  const { data: submissionsData } = await apolloClient.query<{ submissions: SubmissionType[] }>({
+    query: GET_SUBMISSIONS_BY_ASSIGNMENT_AND_USER_ID,
+    variables: { assignmentConfigId: idData.appeal.assignmentConfigId, userId },
+  });
+
   // TODO(BRYAN): Obtain the submission IDs from the backend
-  const oldSubmissionId = 1;
-  const newSubmissionId = 2;
+  const newSubmissionId: number = idData.appeal.newFileSubmissionId || -1;
+  let oldSubmissionId: number = -1;
+  for (let i = 0; i < submissionsData.submissions.length; i++) {
+    if (submissionsData.submissions[i].id != newSubmissionId) {
+      oldSubmissionId = submissionsData.submissions[i].id;
+      break;
+    }
+  }
+
   let diffSubmissionsData: DiffSubmissionsData;
   try {
     const response = await fetch(
