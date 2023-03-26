@@ -29,7 +29,6 @@ interface AppealFileSubmissionType {
 /**
  * Returns a component that allows file to be submitted along with the appeal
  */
-// TODO(BRYAN): Enable File Submission + Investigate the usage of `configId`
 function AppealFileSubmission({ allowUpload, configId }: AppealFileSubmissionType) {
   const { user, submitFile } = useZinc();
   const dispatch = useLayoutDispatch();
