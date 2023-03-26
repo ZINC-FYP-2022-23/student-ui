@@ -6,6 +6,7 @@ import RichTextEditor from "@/components/RichTextEditor";
 import { LayoutProvider } from "@/contexts/layout";
 import { CREATE_APPEAL_MESSAGE } from "@/graphql/mutations/appealMutations";
 import {
+  GET_APPEALS_BY_USER_ID_AND_ASSIGNMENT_ID,
   GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID,
   GET_APPEAL_CONFIG,
   GET_APPEAL_DETAILS_BY_APPEAL_ID,
@@ -14,7 +15,7 @@ import {
 } from "@/graphql/queries/appealQueries";
 import { Layout } from "@/layout";
 import { AppealAttempt, AppealLog, AppealStatus, DisplayMessageType } from "@/types/appeal";
-import { Submission as SubmissionType } from "@/types/tables";
+import { Appeal, AppealMessage, AssignmentConfig, ChangeLog, Submission as SubmissionType } from "@/types/tables";
 import { mergeDataToActivityLogList, transformToAppealAttempt } from "@/utils/appealUtils";
 import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -319,25 +320,42 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
     data: appealConfigData,
     loading: appealConfigLoading,
     error: appealConfigError,
-  } = useQuery(GET_APPEAL_CONFIG, { variables: { assignmentConfigId: assignmentId } });
+  } = useQuery<{ assignmentConfig: AssignmentConfig }>(GET_APPEAL_CONFIG, {
+    variables: { assignmentConfigId: assignmentId },
+  });
   const {
     data: appealsDetailsData,
     loading: appealDetailsLoading,
     error: appealDetailsError,
-  } = useSubscription(GET_APPEAL_DETAILS_BY_APPEAL_ID, { variables: { appealId: appealId } });
+  } = useSubscription<{ appeal: Appeal }>(GET_APPEAL_DETAILS_BY_APPEAL_ID, { variables: { appealId: appealId } });
   const {
     data: appealChangeLogData,
     loading: appealChangeLogLoading,
     error: appealChangeLogError,
-  } = useSubscription(GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID, { variables: { appealId: appealId } });
+  } = useSubscription<{ changeLogs: ChangeLog[] }>(GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID, {
+    variables: { appealId: appealId },
+  });
   const {
     data: appealMessagesData,
     loading: appealMessagesLoading,
     error: appealMessagesError,
-  } = useSubscription(GET_APPEAL_MESSAGES, { variables: { appealId: appealId } });
+  } = useSubscription<{ changeLogs: AppealMessage[] }>(GET_APPEAL_MESSAGES, { variables: { appealId: appealId } });
+  const {
+    data: appealsData,
+    loading: appealsLoading,
+    error: appealsError,
+  } = useSubscription<{ appeals: Appeal[] }>(GET_APPEALS_BY_USER_ID_AND_ASSIGNMENT_ID, {
+    variables: { userId: userId, assignmentConfigId: assignmentId },
+  });
 
   // Display Loading if data fetching is still in-progress
-  if (appealConfigLoading || appealDetailsLoading || appealChangeLogLoading || appealMessagesLoading) {
+  if (
+    appealConfigLoading ||
+    appealDetailsLoading ||
+    appealChangeLogLoading ||
+    appealMessagesLoading ||
+    appealsLoading
+  ) {
     return <DisplayLoading assignmentId={assignmentId} />;
   }
 
@@ -358,7 +376,7 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
     // Check if the appeal details is available, if not, there is no such appeal
     const errorMessage = "Invalid appeal. Please check the appeal number.";
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
-  } else if (!appealConfigData.assignmentConfig.isAppealAllowed) {
+  } else if (!appealConfigData!.assignmentConfig.isAppealAllowed) {
     // Check if the appeal submission is allowed
     const errorMessage = "The assignment does not allow any appeals.";
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
@@ -379,6 +397,15 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
     | (DisplayMessageType & { _type: "appealMessage" })
     | (AppealLog & { _type: "appealLog" })
   )[] = mergeDataToActivityLogList({ appealAttempt, appealChangeLogData, appealMessagesData });
+
+  // Only allow reply if config set as true AND it's the latest appeal
+  let isAppealStudentReplyAllowed: boolean = false;
+  if (
+    appealsData!.appeals[0].createdAt == appealAttempt[0].createdAt &&
+    appealConfigData!.assignmentConfig.isAppealStudentReplyAllowed
+  ) {
+    isAppealStudentReplyAllowed = true;
+  }
 
   return (
     <LayoutProvider>
@@ -432,7 +459,7 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
                     <ActivityLogTab
                       userId={userId}
                       activityLogList={activityLogList}
-                      isAppealStudentReplyAllowed={appealConfigData.assignmentConfig.isAppealStudentReplyAllowed}
+                      isAppealStudentReplyAllowed={isAppealStudentReplyAllowed}
                     />
                   </Tab.Panel>
                   {/* "Code Comparison" tab panel */}
