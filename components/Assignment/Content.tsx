@@ -412,14 +412,14 @@ function getScore({ appeals, changeLogs, submissions }: getScoreProps) {
 
   // Get the latest `SCORE` change log
   for (let i = 0; i < changeLogs.length; i++) {
-    if (changeLogs[i].type === "SCORE") {
-      const changeLogDate: Date = new Date(changeLogs[i].createdAt);
+    const changeLogDate: Date = new Date(changeLogs[i].createdAt);
 
-      if (acceptedAppealDate && acceptedAppealDate > changeLogDate) {
-        return acceptedAppealScore;
-      } else {
-        return parseInt(changeLogs[i].updatedState.replace(/[^0-9]/g, ""));
-      }
+    if (acceptedAppealDate && acceptedAppealDate > changeLogDate) {
+      return acceptedAppealScore;
+    }
+
+    if (changeLogs[i].type === "SCORE") {
+      return parseInt(changeLogs[i].updatedState.replace(/[^0-9]/g, ""));
     }
   }
 
