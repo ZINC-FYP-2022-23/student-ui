@@ -3,7 +3,11 @@ import RichTextEditor from "@/components/RichTextEditor";
 import { LayoutProvider, useLayoutDispatch } from "@/contexts/layout";
 import { useZinc } from "@/contexts/zinc";
 import { CREATE_APPEAL } from "@/graphql/mutations/appealMutations";
-import { GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID, GET_APPEAL_CONFIG } from "@/graphql/queries/appealQueries";
+import {
+  GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID,
+  GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID,
+  GET_APPEAL_CONFIG,
+} from "@/graphql/queries/appealQueries";
 import { SUBMISSION_SUBSCRIPTION } from "@/graphql/queries/user";
 import { Layout } from "@/layout";
 import { initializeApollo } from "@/lib/apollo";
@@ -27,7 +31,6 @@ interface AppealFileSubmissionType {
 /**
  * Returns a component that allows file to be submitted along with the appeal
  */
-// TODO(BRYAN): Investigate the usage of `configId`
 function AppealFileSubmission({ allowUpload, configId, setNewFileSubmissionId }: AppealFileSubmissionType) {
   const { user, submitFile } = useZinc();
   const dispatch = useLayoutDispatch();
@@ -303,6 +306,13 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     error: appealConfigError,
   } = useQuery(GET_APPEAL_CONFIG, { variables: { assignmentConfigId: assignmentId } });
   const {
+    data: submissionsData,
+    loading: submissionLoading,
+    error: submissionsError,
+  } = useSubscription<{ submissions: Submission[] }>(SUBMISSION_SUBSCRIPTION, {
+    variables: { userId, assignmentConfigId: assignmentId },
+  });
+  const {
     data: appealDetailsData,
     loading: appealDetailsLoading,
     error: appealDetailsError,
@@ -310,15 +320,15 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     variables: { userId, assignmentConfigId: assignmentId },
   });
   const {
-    data: submissionsData,
-    loading: submissionLoading,
-    error: submissionsError,
-  } = useSubscription<{ submissions: Submission[] }>(SUBMISSION_SUBSCRIPTION, {
+    data: appealChangeLogData,
+    loading: appealChangeLogLoading,
+    error: appealChangeLogError,
+  } = useSubscription(GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID, {
     variables: { userId, assignmentConfigId: assignmentId },
   });
 
   // Display Loading if data fetching is still in-progress
-  if (appealConfigLoading || appealDetailsLoading || submissionLoading) {
+  if (appealConfigLoading || appealDetailsLoading || submissionLoading || appealChangeLogLoading) {
     return <DisplayLoading assignmentId={assignmentId} />;
   }
 
@@ -331,6 +341,9 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   } else if (submissionsError) {
     const errorMessage = "Unable to Fetch submission details with `SUBMISSION_SUBSCRIPTION`";
+    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+  } else if (appealChangeLogError) {
+    const errorMessage = "Unable to Fetch submission details with `GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID`";
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   } else if (!appealConfigData.assignmentConfig) {
     // Error if `assignmentConfig` is undefined
@@ -358,7 +371,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
   } else if (
     appealDetailsData.appeals &&
     appealDetailsData.appeals[0] &&
-    appealDetailsData.appeals[0].status == "PENDING"
+    appealDetailsData.appeals[0].status === "PENDING"
   ) {
     // Does not allow appeal submission if another appeal is `PENDING`
     const errorMessage = "You are not allowed to submit a new appeal while having a pending appeal.";
@@ -376,8 +389,49 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
 
   // Determine whether student got full mark in the latest submission
   let isFullMark: boolean = false;
-  const score = submissionsData?.submissions.filter((e) => !e.isAppeal)[0].reports[0].grade.details.accScore;
-  const maxScore = submissionsData?.submissions.filter((e) => !e.isAppeal)[0].reports[0].grade.details.accTotal;
+  // Get the latest score
+  let score: number = -1;
+  // 1. Get score from latest, non-appeal submission
+  score = submissionsData?.submissions
+    .filter((e) => !e.isAppeal && e.reports && e.reports.length > 0)[0]
+    .reports.filter((e) => e.grade && e.grade.score)[0].grade.score;
+  // let cont: boolean = true;
+  // for (let i = 0; submissionsData && cont && i < submissionsData.submissions.length; i++) {
+  //   cont = false;
+  //   for (let j = 0; j < appealDetailsData.appeals.length; j++) {
+  //     if (submissionsData.submissions[i].id === appealDetailsData.appeals[j].newFileSubmissionId) {
+  //       cont = true;
+  //       break;
+  //     }
+  //   }
+  //   if (!cont) {
+  //     // TODO(Owen): grade can be null
+  //     score = submissionsData.submissions[i].reports[0].grade?.score;
+  //     break;
+  //   }
+  // }
+  // 2. Replace with score from appeal or `SCORE` change log (if any)
+  const latestAppealUpdateDate: Date = new Date(appealDetailsData.appeals[0].updatedAt);
+  for (let i = 0; i < appealChangeLogData.changeLogs.length; i++) {
+    const logDate: Date = new Date(appealChangeLogData.changeLogs[i].createdAt);
+    if (
+      logDate < latestAppealUpdateDate &&
+      appealDetailsData.appeals[0].latestStatus === "ACCEPTED" &&
+      appealDetailsData.appeals[0].newFileSubmissionId &&
+      appealDetailsData.appeals[0].submission &&
+      appealDetailsData.appeals[0].submission.reports.length > 0
+    ) {
+      score = appealDetailsData.appeals[0].submission.reports[0].grade.score;
+      break;
+    } else if (appealChangeLogData.changeLogs[i].type === "SCORE") {
+      score = appealChangeLogData.changeLogs[i].updatedState.replace(/[^0-9]/g, "");
+      break;
+    }
+  }
+  const maxScore = submissionsData?.submissions
+    .filter((e) => !e.isAppeal)[0]
+    .reports.filter((e) => e.grade && e.grade.details)[0].grade.details.accTotal;
+
   if (score === maxScore) isFullMark = true;
 
   return (

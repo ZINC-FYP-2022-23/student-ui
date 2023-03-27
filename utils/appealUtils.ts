@@ -1,13 +1,5 @@
+import { AppealAttempt, AppealLog, AppealStatus, ChangeLog, ChangeLogTypes, DisplayMessageType } from "@/types/appeal";
 import { Submission as SubmissionType } from "types";
-import {
-  AppealAttempt,
-  AppealLog,
-  AppealMessage,
-  DisplayMessageType,
-  ChangeLog,
-  ChangeLogTypes,
-  AppealStatus,
-} from "@/types/appeal";
 
 /**
  * Transform the raw data appeal status into type `AppealStatus`
@@ -177,6 +169,7 @@ function transformToAppealLog({ appeals, changeLog }: transformToAppealLogProps)
   appeals.forEach((appeal) => {
     appealLog.push({
       id: appeal.id,
+      appealId: appeal.id,
       type: "APPEAL_SUBMISSION",
       date: appeal.createdAt,
     });
@@ -188,10 +181,12 @@ function transformToAppealLog({ appeals, changeLog }: transformToAppealLogProps)
 
     appealLog.push({
       id: log.id,
+      appealId: log.appealId,
       type: log.type,
       date: log.createdAt,
       originalState: originalState,
       updatedState: updatedStatus,
+      reason: log.reason,
     });
   });
 
@@ -245,8 +240,8 @@ export function mergeDataToActivityLogList({
       originalState: log.originalState,
       updatedState: log.updatedState,
       initiatedBy: log.initiatedBy,
-      reason: log.reason || null,
-      appealId: log.appealId || null,
+      reason: log.reason,
+      appealId: log.appealId,
     });
   });
 

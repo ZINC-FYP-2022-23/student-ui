@@ -11,7 +11,7 @@ export enum AppealStatus {
 
 export type AppealAttempt = {
   id: number;
-  newFileSubmissionId?: string;
+  newFileSubmissionId?: number;
   assignmentConfigId: number;
   userId: number;
   createdAt: string;
@@ -36,8 +36,7 @@ export type ChangeLog = {
   updatedState: string;
   initiatedBy: number; // User ID
   reason?: string;
-
-  appealId?: number;
+  appealId: number;
 };
 
 export enum ChangeLogTypes {
@@ -49,10 +48,12 @@ export enum ChangeLogTypes {
 // Unique types in student-ui
 export type AppealLog = {
   id: number;
+  appealId: number;
   type: ChangeLogTypes | "APPEAL_SUBMISSION";
   date: string;
   originalState?: string;
   updatedState?: string;
+  reason?: string;
 };
 
 export type DisplayMessageType = {

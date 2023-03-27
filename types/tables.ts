@@ -4,6 +4,31 @@
 
 import { GraderReport, ScoreReports } from "./report";
 
+export type AppealMessage = {
+  id: number;
+  message: string;
+  senderId: number;
+  appealId: number;
+  createdAt: string;
+  isRead: boolean;
+  assignment_appeal: Appeal;
+  user: User;
+};
+
+export type Appeal = {
+  id: number;
+  createdAt: string;
+  status: string;
+  newFileSubmissionId: number | null;
+  updatedAt: string | null;
+  userId: number;
+  assignmentConfigId: number;
+  assignment_appeal_messages: AppealMessage[];
+  assignment_config: AssignmentConfig;
+  submission: Submission;
+  user: User;
+};
+
 export type Assignment = {
   configs: AssignmentConfig[];
   course: Course;
@@ -42,6 +67,14 @@ export type AssignmentConfig = {
   /** Whether the current time is after `stopCollectionAt`. */
   submissionWindowPassed: boolean;
   updatedAt: string;
+  /** Appeal-related */
+  isAppealAllowed: boolean;
+  appealLimits: number | null;
+  appealStartAt: Date | null;
+  appealStopAt: Date | null;
+  isAppealStudentReplyAllowed: boolean;
+  isAppealViewReportAllowed: boolean;
+  assignment_appeals: Appeal[];
 };
 
 export type AssignmentConfigUser = {
@@ -62,6 +95,21 @@ export type AssignmentType = {
   updated_at: string;
 };
 
+export type ChangeLog = {
+  id: number;
+  createdAt: string;
+  type: string;
+  originalState: string;
+  updatedState: string;
+  initiated_by: number;
+  reason: string;
+  appealId: number;
+  userId: number;
+  assignmentConfigId: number;
+  reportId: number;
+  submissionId: number;
+  user: User;
+};
 export type Course = {
   assignments: Assignment[];
   code: string;

@@ -42,7 +42,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
           </div>
           {showButton && (
             <span className="inline-flex rounded-md shadow-sm">
-              <Link href={`/appeals/${log.id}`}>
+              <Link href={`/appeals/${log.appealId}`}>
                 <a className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
                   View Appeal
                 </a>
@@ -86,11 +86,17 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
               {log.updatedState === AppealStatus.Pending && (
                 <p className="ml-2 text-sm text-yellow-600">Your appeal has been set to pending</p>
               )}
+              {log.reason && (
+                <div className="flex-row">
+                  <p className="text-sm text-gray-600">Reason: </p>
+                  <div className="ml-2 text-sm text-blue-900" dangerouslySetInnerHTML={{ __html: log.reason }} />
+                </div>
+              )}
             </p>
           </div>
           {showButton && (
             <span className="inline-flex rounded-md shadow-sm">
-              <Link href={`/${assignmentConfigId}/${log.id}`}>
+              <Link href={`/appeals/${log.appealId}`}>
                 <a className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
                   View Appeal
                 </a>
@@ -138,11 +144,17 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
                   ...(logDate.getFullYear() !== now.getFullYear() && { year: "numeric" }),
                 })} at ${logDate.toLocaleTimeString().toLowerCase()}`}
               </span>
+              {log.reason && (
+                <div className="flex-row">
+                  <p className="text-sm text-gray-600">Reason: </p>
+                  <div className="ml-2 text-sm text-blue-900" dangerouslySetInnerHTML={{ __html: log.reason }} />
+                </div>
+              )}
             </p>
           </div>
           {showButton && (
             <span className="inline-flex rounded-md shadow-sm">
-              <Link href={`/${assignmentConfigId}/${log.id}`}>
+              <Link href={`/appeals/${log.appealId}`}>
                 <a className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
                   View Appeal
                 </a>

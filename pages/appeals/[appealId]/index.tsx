@@ -6,15 +6,18 @@ import RichTextEditor from "@/components/RichTextEditor";
 import { LayoutProvider } from "@/contexts/layout";
 import { CREATE_APPEAL_MESSAGE } from "@/graphql/mutations/appealMutations";
 import {
+  GET_APPEALS_BY_USER_ID_AND_ASSIGNMENT_ID,
   GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID,
   GET_APPEAL_CONFIG,
   GET_APPEAL_DETAILS_BY_APPEAL_ID,
   GET_APPEAL_MESSAGES,
   GET_ASSIGNMENT_CONFIG_ID_BY_APPEAL_ID,
+  GET_SUBMISSIONS_BY_ASSIGNMENT_AND_USER_ID,
+  GET_IDS_BY_APPEAL_ID,
 } from "@/graphql/queries/appealQueries";
 import { Layout } from "@/layout";
 import { AppealAttempt, AppealLog, AppealStatus, DisplayMessageType } from "@/types/appeal";
-import { Submission as SubmissionType } from "@/types/tables";
+import { Appeal, AppealMessage, AssignmentConfig, ChangeLog, Submission as SubmissionType } from "@/types/tables";
 import { mergeDataToActivityLogList, transformToAppealAttempt } from "@/utils/appealUtils";
 import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -37,7 +40,6 @@ interface ButtonProps {
  * Returns a appeal submission button
  */
 function Button({ userId, comments }: ButtonProps) {
-  // TODO(BRYAN): Investigate whether the new Date() will count the time when the page is opened OR when the button is pressed
   const router = useRouter();
   const { appealId } = router.query;
   const now = new Date();
@@ -51,7 +53,6 @@ function Button({ userId, comments }: ButtonProps) {
         if (comments === null || comments === "") {
           alert("Please Fill All Required Field");
         } else {
-          // TODO(BRYAN): Add error checking + Notification
           createAppealMessage({
             variables: {
               input: {
@@ -246,7 +247,6 @@ function DisplayError({ assignmentId, errorMessage }: DisplayErrorProps) {
           <div className="p-5 flex flex-1 flex-col h-full w-max">
             <div className="pb-3">
               <div className="my-1 flex items-center">
-                {/* TODO(BRYAN): Query the assignment ID instead of passing its value from getServerSideProps(). */}
                 <Link href={`/assignments/${assignmentId}`}>
                   <a className="max-w-max-content w-max px-3 py-1.5 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
                     <FontAwesomeIcon icon={["far", "chevron-left"]} className="mr-2" />
@@ -289,7 +289,6 @@ function DisplayLoading({ assignmentId }: DisplayLoadingProps) {
           <div className="p-5 flex flex-1 flex-col h-full w-max">
             <div className="pb-3">
               <div className="my-1 flex items-center">
-                {/* TODO(BRYAN): Query the assignment ID instead of passing its value from getServerSideProps(). */}
                 <Link href={`/assignments/${assignmentId}`}>
                   <a className="max-w-max-content w-max px-3 py-1.5 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
                     <FontAwesomeIcon icon={["far", "chevron-left"]} className="mr-2" />
@@ -323,25 +322,42 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
     data: appealConfigData,
     loading: appealConfigLoading,
     error: appealConfigError,
-  } = useQuery(GET_APPEAL_CONFIG, { variables: { assignmentConfigId: assignmentId } });
+  } = useQuery<{ assignmentConfig: AssignmentConfig }>(GET_APPEAL_CONFIG, {
+    variables: { assignmentConfigId: assignmentId },
+  });
   const {
     data: appealsDetailsData,
     loading: appealDetailsLoading,
     error: appealDetailsError,
-  } = useSubscription(GET_APPEAL_DETAILS_BY_APPEAL_ID, { variables: { appealId: appealId } });
+  } = useSubscription<{ appeal: Appeal }>(GET_APPEAL_DETAILS_BY_APPEAL_ID, { variables: { appealId: appealId } });
   const {
     data: appealChangeLogData,
     loading: appealChangeLogLoading,
     error: appealChangeLogError,
-  } = useSubscription(GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID, { variables: { appealId: appealId } });
+  } = useSubscription<{ changeLogs: ChangeLog[] }>(GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID, {
+    variables: { appealId: appealId },
+  });
   const {
     data: appealMessagesData,
     loading: appealMessagesLoading,
     error: appealMessagesError,
-  } = useSubscription(GET_APPEAL_MESSAGES, { variables: { appealId: appealId } });
+  } = useSubscription<{ changeLogs: AppealMessage[] }>(GET_APPEAL_MESSAGES, { variables: { appealId: appealId } });
+  const {
+    data: appealsData,
+    loading: appealsLoading,
+    error: appealsError,
+  } = useSubscription<{ appeals: Appeal[] }>(GET_APPEALS_BY_USER_ID_AND_ASSIGNMENT_ID, {
+    variables: { userId: userId, assignmentConfigId: assignmentId },
+  });
 
   // Display Loading if data fetching is still in-progress
-  if (appealConfigLoading || appealDetailsLoading || appealChangeLogLoading || appealMessagesLoading) {
+  if (
+    appealConfigLoading ||
+    appealDetailsLoading ||
+    appealChangeLogLoading ||
+    appealMessagesLoading ||
+    appealsLoading
+  ) {
     return <DisplayLoading assignmentId={assignmentId} />;
   }
 
@@ -362,7 +378,7 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
     // Check if the appeal details is available, if not, there is no such appeal
     const errorMessage = "Invalid appeal. Please check the appeal number.";
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
-  } else if (!appealConfigData.assignmentConfig.isAppealAllowed) {
+  } else if (!appealConfigData!.assignmentConfig.isAppealAllowed) {
     // Check if the appeal submission is allowed
     const errorMessage = "The assignment does not allow any appeals.";
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
@@ -384,6 +400,15 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
     | (AppealLog & { _type: "appealLog" })
   )[] = mergeDataToActivityLogList({ appealAttempt, appealChangeLogData, appealMessagesData });
 
+  // Only allow reply if config set as true AND it's the latest appeal
+  let isAppealStudentReplyAllowed: boolean = false;
+  if (
+    appealsData!.appeals[0].createdAt == appealAttempt[0].createdAt &&
+    appealConfigData!.assignmentConfig.isAppealStudentReplyAllowed
+  ) {
+    isAppealStudentReplyAllowed = true;
+  }
+
   return (
     <LayoutProvider>
       <Layout title="Grade Appeal Details">
@@ -392,7 +417,6 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
           <div className="p-5 flex flex-1 flex-col h-full w-max">
             <div className="pb-3">
               <div className="my-1 flex items-center">
-                {/* TODO(BRYAN): Query the assignment ID instead of passing its value from getServerSideProps(). */}
                 <Link href={`/assignments/${assignmentId}`}>
                   <a className="max-w-max-content w-max px-3 py-1.5 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
                     <FontAwesomeIcon icon={["far", "chevron-left"]} className="mr-2" />
@@ -437,7 +461,7 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
                     <ActivityLogTab
                       userId={userId}
                       activityLogList={activityLogList}
-                      isAppealStudentReplyAllowed={appealConfigData.assignmentConfig.isAppealStudentReplyAllowed}
+                      isAppealStudentReplyAllowed={isAppealStudentReplyAllowed}
                     />
                   </Tab.Panel>
                   {/* "Code Comparison" tab panel */}
@@ -473,9 +497,27 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
     }
   }
 
+  const { data: idData } = await apolloClient.query<{ appeal: Appeal }>({
+    query: GET_IDS_BY_APPEAL_ID,
+    variables: {
+      appealId: appealId,
+    },
+  });
+  const { data: submissionsData } = await apolloClient.query<{ submissions: SubmissionType[] }>({
+    query: GET_SUBMISSIONS_BY_ASSIGNMENT_AND_USER_ID,
+    variables: { assignmentConfigId: idData.appeal.assignmentConfigId, userId },
+  });
+
   // TODO(BRYAN): Obtain the submission IDs from the backend
-  const oldSubmissionId = 1;
-  const newSubmissionId = 2;
+  const newSubmissionId: number = idData.appeal.newFileSubmissionId || -1;
+  let oldSubmissionId: number = -1;
+  for (let i = 0; i < submissionsData.submissions.length; i++) {
+    if (submissionsData.submissions[i].id != newSubmissionId) {
+      oldSubmissionId = submissionsData.submissions[i].id;
+      break;
+    }
+  }
+
   let diffSubmissionsData: DiffSubmissionsData;
   try {
     const response = await fetch(

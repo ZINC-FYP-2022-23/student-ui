@@ -3,11 +3,12 @@ import {
   GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID,
   GET_APPEAL_CONFIG,
 } from "@/graphql/queries/appealQueries";
-import { AppealAttempt, AppealLog, AppealStatus, ChangeLog, ChangeLogTypes, DisplayMessageType } from "@/types/appeal";
-import { AssignmentConfig, Grade, Submission as SubmissionType } from "@/types/tables";
+import { AppealAttempt, AppealLog, AppealStatus, DisplayMessageType } from "@/types/appeal";
+import { AssignmentConfig, Submission as SubmissionType, Appeal, ChangeLog } from "@/types/tables";
 import { mergeDataToActivityLogList, transformToAppealAttempt } from "@/utils/appealUtils";
 import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Alert } from "@mantine/core";
 import Link from "next/link";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
@@ -19,7 +20,6 @@ import { AppealResult } from "../Appeal/AppealResult";
 import { Submission } from "../Submission";
 import { SubmissionCollectionStatus } from "../SubmissionCollectionStatus";
 import { SubmissionLoader } from "../SubmissionLoader";
-import { Alert } from "@mantine/core";
 // import { Notification, SubmissionNotification } from "../Notification";
 // import toast from "react-hot-toast";
 // import { useMutation} from "@apollo/client";
@@ -193,7 +193,8 @@ function AppealDetailsButton({ appealId }: { appealId: number }) {
 interface GradePanelProps {
   content: AssignmentConfig;
   assignmentId: number;
-  finalGrade: Grade; // Final grade of the assignment submission
+  score: number;
+  maxScore: number;
   appealAttemptLeft: number; // Number of appeals attempt that can be made left
   appealAttempt: AppealAttempt; // The latest appeal attempt
   appealConfigData; // Raw data of appeal configs
@@ -205,7 +206,8 @@ interface GradePanelProps {
 function GradePanel({
   content,
   assignmentId,
-  finalGrade,
+  score,
+  maxScore,
   appealAttemptLeft,
   appealAttempt,
   appealConfigData,
@@ -270,7 +272,7 @@ function GradePanel({
   return (
     <div className={divCss}>
       <p className={gradeTextCss}>
-        Your Grade: <span className="font-bold">{finalGrade.score}</span>/{finalGrade.maxTotal}
+        Your Grade: <span className="font-bold">{score}</span>/{maxScore}
       </p>
       <AppealDetailsButton appealId={appealId} />
       <AppealResult appealResult={appealStatus} />
@@ -369,6 +371,76 @@ function DisplayError({ content, errorMessage }: DisplayErrorProps) {
   );
 }
 
+interface getScoreProps {
+  appeals: Appeal[];
+  changeLogs: ChangeLog[];
+  submissions: SubmissionType[];
+}
+
+/**
+ * Gets the latest score based on the following logic:
+ * @returns {number}
+ */
+function getScore({ appeals, changeLogs, submissions }: getScoreProps) {
+  /* *** Logic of how to get the score: ***
+   * If the `updatedAt` of the latest `ACCEPTED` appeal later than the date of any `SCORE` change:
+   *    If `newFileSubmission` is available, >>>  use the score of the `newFileSubmission`.
+   *    If `newFileSubmission` is NOT available:
+   *        If there is a `SCORE` change log >>> use the score of latest `SCORE` change.
+   *        If there is NO `SCORE` change log >>> use the score of the original submission.
+   * If there is the date of the latest `SCORE` change than is later than the `updatedAt` of the latest `ACCEPTED` appeal >>> use the score of latest `SCORE` change
+   * If there are NO `SCORE` change log AND `ACCEPTED` appeal >>> use the score of the original submission
+   */
+
+  const acceptedAppeals: Appeal[] = appeals.filter((e) => e.status === "ACCEPTED");
+  let acceptedAppealDate: Date | null = null;
+  let acceptedAppealScore: number | null = null;
+
+  // Get the latest `ACCEPTED` appeal with a new score generated
+  for (let i = 0; i < acceptedAppeals.length; i++) {
+    if (
+      acceptedAppeals[i].updatedAt &&
+      acceptedAppeals[i].submission &&
+      acceptedAppeals[i].submission.reports.length > 0 &&
+      acceptedAppeals[i].submission.reports[0].grade.score
+    ) {
+      acceptedAppealDate = new Date(acceptedAppeals[i].updatedAt!);
+      acceptedAppealScore = acceptedAppeals[i].submission.reports[0].grade.score;
+      break;
+    }
+  }
+
+  // Get the latest `SCORE` change log
+  for (let i = 0; i < changeLogs.length; i++) {
+    const changeLogDate: Date = new Date(changeLogs[i].createdAt);
+
+    if (acceptedAppealDate && acceptedAppealDate > changeLogDate) {
+      return acceptedAppealScore;
+    }
+
+    if (changeLogs[i].type === "SCORE") {
+      return parseInt(changeLogs[i].updatedState.replace(/[^0-9]/g, ""));
+    }
+  }
+
+  // If above fails, get the original submission score
+  for (let i = 0; i < submissions.length; i++) {
+    let isNewFileSubmission: boolean = false;
+
+    // Do not pick the submission that is related to the appeal
+    for (let j = 0; j < appeals.length; j++) {
+      if (submissions[i].id === appeals[j].newFileSubmissionId) {
+        isNewFileSubmission = true;
+        break;
+      }
+    }
+
+    if (!isNewFileSubmission && submissions[i].reports.length > 0 && submissions[i].reports[0].grade.score) {
+      return submissions[i].reports[0].grade.score;
+    }
+  }
+}
+
 interface AssignmentContentProps {
   content: AssignmentConfig; // Assignment the page is showing
 }
@@ -393,19 +465,23 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
     data: appealsDetailsData,
     loading: appealDetailsLoading,
     error: appealDetailsError,
-  } = useSubscription(GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID, {
+  } = useSubscription<{ appeals: Appeal[] }>(GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID, {
     variables: { userId: user, assignmentConfigId: content.id },
   });
   const {
     data: appealChangeLogData,
     loading: appealChangeLogLoading,
     error: appealChangeLogError,
-  } = useSubscription(GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID, { variables: { assignmentConfigId: content.id } });
+  } = useSubscription<{ changeLogs: ChangeLog[] }>(GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID, {
+    variables: { userId: user, assignmentConfigId: content.id },
+  });
   const {
     data: appealConfigData,
     loading: appealConfigLoading,
     error: appealConfigError,
-  } = useQuery(GET_APPEAL_CONFIG, { variables: { assignmentConfigId: content.id } });
+  } = useQuery<{ assignmentConfig: AssignmentConfig }>(GET_APPEAL_CONFIG, {
+    variables: { assignmentConfigId: content.id },
+  });
 
   // Display Loading if data fetching is still in-progress
   if (submissionLoading || appealConfigLoading || appealDetailsLoading || appealChangeLogLoading) {
@@ -427,12 +503,6 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
     return <DisplayError content={content} errorMessage={errorMessage} />;
   }
 
-  // Get Final Grade
-  let finalGrade: Grade | null = null;
-  if (submissionData && submissionData.submissions.length > 0 && submissionData.submissions[0].reports.length > 0) {
-    finalGrade = submissionData.submissions[0].reports[0].grade;
-  }
-
   // Translate `appealDetailsData` to `AppealAttempt[]`
   let appealAttempts: AppealAttempt[] = transformToAppealAttempt({ appealsDetailsData });
 
@@ -444,8 +514,17 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
   )[] = mergeDataToActivityLogList({ appealAttempt: appealAttempts, appealChangeLogData, submissionData });
 
   // Get number of appeal attempt left
-  let appealAttemptLeft: number = appealConfigData.assignmentConfig.appealLimits - appealAttempts.length;
+  let appealAttemptLeft: number = appealConfigData!.assignmentConfig!.appealLimits! - appealAttempts.length;
   if (appealAttemptLeft < 0) appealAttemptLeft = 0;
+
+  // Get the original score
+  const score: number = getScore({
+    appeals: appealsDetailsData!.appeals,
+    changeLogs: appealChangeLogData!.changeLogs,
+    submissions: submissionData!.submissions,
+  })!;
+
+  const maxScore: number = appealsDetailsData!.appeals[0].user.submissions[0].reports[0].grade.maxTotal;
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -510,11 +589,12 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
                 submissionClosed={content.submissionWindowPassed}
                 isOpen={content.openForSubmission}
               />
-              {finalGrade && (
+              {score && maxScore && (
                 <GradePanel
                   content={content}
                   assignmentId={content.id}
-                  finalGrade={finalGrade}
+                  score={score}
+                  maxScore={maxScore}
                   appealAttemptLeft={appealAttemptLeft}
                   appealAttempt={appealAttempts[0]}
                   appealConfigData={appealConfigData}
