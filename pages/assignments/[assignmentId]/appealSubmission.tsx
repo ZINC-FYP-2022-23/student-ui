@@ -2,7 +2,6 @@ import { AssignmentSection } from "@/components/Assignment/List";
 import RichTextEditor from "@/components/RichTextEditor";
 import { LayoutProvider, useLayoutDispatch } from "@/contexts/layout";
 import { useZinc } from "@/contexts/zinc";
-import { CREATE_APPEAL } from "@/graphql/mutations/appealMutations";
 import {
   GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID,
   GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID,
@@ -12,7 +11,7 @@ import { SUBMISSION_SUBSCRIPTION } from "@/graphql/queries/user";
 import { Layout } from "@/layout";
 import { initializeApollo } from "@/lib/apollo";
 import { Submission } from "@/types";
-import { useMutation, useQuery, useSubscription } from "@apollo/client";
+import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "@mantine/core";
 import axios from "axios";
