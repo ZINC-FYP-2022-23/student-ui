@@ -60,13 +60,16 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // Ban appealing when no more quota
-    const appealQuota =
-      data.assignmentConfig.appealLimits - data.assignmentConfig.assignment_appeals_aggregate.aggregate.count;
-    if (appealQuota === 0) {
-      return res.status(403).json({
-        status: "error",
-        error: "Student has exhausted all appeal quota.",
-      });
+    // appealLimits null means no limit on number of appeals each student can submit
+    if (data.assignmentConfig.appealLimits !== null) {
+      const appealQuota =
+        data.assignmentConfig.appealLimits - data.assignmentConfig.assignment_appeals_aggregate.aggregate.count;
+      if (appealQuota === 0) {
+        return res.status(403).json({
+          status: "error",
+          error: "Student has exhausted all appeal quota.",
+        });
+      }
     }
 
     // Previous appeal is still PENDING
