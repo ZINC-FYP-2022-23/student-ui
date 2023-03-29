@@ -15,6 +15,7 @@ import { Submission } from "@/types";
 import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "@mantine/core";
+import axios from "axios";
 import { zonedTimeToUtc } from "date-fns-tz";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
@@ -119,9 +120,7 @@ interface ButtonProps {
 /**
  * Returns a appeal submission button
  */
-function Button({ userId, assignmentConfigId, comments, newFileSubmissionId }: ButtonProps) {
-  const [createAppeal] = useMutation(CREATE_APPEAL);
-
+function AppealButton({ userId, assignmentConfigId, comments, newFileSubmissionId }: ButtonProps) {
   const dispatch = useLayoutDispatch();
   const router = useRouter();
 
@@ -142,24 +141,13 @@ function Button({ userId, assignmentConfigId, comments, newFileSubmissionId }: B
               return;
             }
 
-            const now = new Date();
+            const now: Date = new Date();
 
-            // TODO(Owen): check current time against appeal stop time
-            // if (now.getTime() > config.time) {
-            //   dispatch({
-            //     type: "showNotification",
-            //     payload: {
-            //       title: "Appeal deadline passed",
-            //       message: "This appeal will not be submitted.",
-            //       success: false,
-            //     },
-            //   });
-            //   router.push(`/assignments/${assignmentConfigId}`);
-            // }
-
-            const appealData = await createAppeal({
-              variables: {
-                input: {
+            try {
+              const { data } = await axios({
+                method: "POST",
+                url: `/api/appeals`,
+                data: {
                   assignmentConfigId,
                   createdAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
                   status: "PENDING",
@@ -176,33 +164,43 @@ function Button({ userId, assignmentConfigId, comments, newFileSubmissionId }: B
                     ],
                   },
                 },
-              },
-            });
-            if (appealData.errors) {
+              });
+
+              if (data.error) {
+                dispatch({
+                  type: "showNotification",
+                  payload: {
+                    title: "Appeal denied",
+                    message: data.error,
+                    success: false,
+                  },
+                });
+                return;
+              }
+
+              // Notify success
               dispatch({
                 type: "showNotification",
                 payload: {
-                  title: "Appeal failed",
-                  message: "Failed to submit appeal. Please try again.",
+                  title: "Appeal submitted",
+                  message: "Your appeal will be reviewed.",
+                  success: true,
+                },
+              });
+
+              // Redirect to appeal page
+              // router.push(`/assignments/${assignmentConfigId}`);
+              router.push(`/appeals/${data.data.createAppeal.id}`);
+            } catch (error) {
+              dispatch({
+                type: "showNotification",
+                payload: {
+                  title: "Unable to submit appeal",
+                  message: "Failed to submit appeal due to network issues. Please submit again.\n" + error,
                   success: false,
                 },
               });
-              return;
             }
-
-            // Notify success
-            dispatch({
-              type: "showNotification",
-              payload: {
-                title: "Appeal submitted",
-                message: "Your appeal will be reviewed.",
-                success: true,
-              },
-            });
-
-            // Redirect to appeal page
-            // router.push(`/assignments/${assignmentConfigId}`);
-            router.push(`/appeals/${appealData.data.createAppeal.id}`);
           }
         }}
       >
@@ -497,7 +495,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                         Your have got Full Mark. Are you sure you wish to submit a grade appeal?
                       </p>
                     </div>
-                    <Button
+                    <AppealButton
                       userId={userId}
                       assignmentConfigId={assignmentId}
                       comments={comments}
@@ -505,7 +503,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                     />
                   </div>
                 ) : (
-                  <Button
+                  <AppealButton
                     userId={userId}
                     assignmentConfigId={assignmentId}
                     comments={comments}
