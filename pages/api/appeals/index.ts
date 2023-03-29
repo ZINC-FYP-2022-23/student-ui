@@ -53,7 +53,7 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
 
     // Assignment config does no allow student to file appeal
     if (!data.assignmentConfig.isAppealAllowed) {
-      return res.status(403).json({
+      return res.json({
         status: "error",
         error: "This assignment does not allow student grade appeals.",
       });
@@ -65,7 +65,7 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
       const appealQuota =
         data.assignmentConfig.appealLimits - data.assignmentConfig.assignment_appeals_aggregate.aggregate.count;
       if (appealQuota === 0) {
-        return res.status(403).json({
+        return res.json({
           status: "error",
           error: "Student has exhausted all appeal quota.",
         });
@@ -74,7 +74,7 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
 
     // Previous appeal is still PENDING
     if (data.appeals.length > 0 && data.appeals[0].status === "PENDING") {
-      return res.status(403).json({
+      return res.json({
         status: "error",
         error: "Previous appeal has not been finalized.",
       });
@@ -82,7 +82,7 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
 
     // Appeal time violating appeal period
     if (!data.assignmentConfig.appealStartAt || !data.assignmentConfig.appealStopAt) {
-      return res.status(403).json({
+      return res.json({
         status: "error",
         error: "Appeal period not configured. Please consult the course coordinator or TAs.",
       });
@@ -91,13 +91,13 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
     const appealStartAt: Date = utcToZonedTime(data.assignmentConfig.appealStartAt, "Asia/Hong_Kong");
     const appealStopAt: Date = utcToZonedTime(data.assignmentConfig.appealStopAt, "Asia/Hong_Kong");
     if (now.getTime() < appealStartAt.getTime()) {
-      return res.status(403).json({
+      return res.json({
         status: "error",
         error: "Before appeal period.",
       });
     }
     if (now.getTime() >= appealStopAt.getTime()) {
-      return res.status(403).json({
+      return res.json({
         status: "error",
         error: "Late appeal denied.",
       });
