@@ -1,20 +1,25 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
-import { utcToZonedTime } from "date-fns-tz";
+import { utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
 
 async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
   const body = req.body;
   const userId = body.userId;
   const assignmentConfigId = body.assignmentConfigId;
 
+  const now: Date = new Date();
+  body.createdAt = zonedTimeToUtc(now, "Asia/Hong_Kong");
+  body.updatedAt = zonedTimeToUtc(now, "Asia/Hong_Kong");
+  body.assignment_appeal_messages.data[0].createdAt = zonedTimeToUtc(now, "Asia/Hong_Kong");
+
   try {
     // Search for previous appeal attempts and assignment config
     const {
-      data: { data },
+      data: { data: appealValidationData },
     } = await axios({
       method: "POST",
       headers: {
-        "X-Hasura-Admin-Secret": process.env.HASURA_GRAPHQL_ADMIN_SECRET,
+        cookie: req.headers.cookie,
       },
       url: `http://${process.env.API_URL}/v1/graphql`,
       data: {
@@ -49,11 +54,11 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
         variables: { assignmentConfigId, userId },
       },
     });
-    console.log(data);
+    console.log(appealValidationData);
 
-    // Assignment config does no allow student to file appeal
-    if (!data.assignmentConfig.isAppealAllowed) {
-      return res.json({
+    // Assignment config does not allow student to file appeal
+    if (!appealValidationData.assignmentConfig.isAppealAllowed) {
+      return res.status(403).json({
         status: "error",
         error: "This assignment does not allow student grade appeals.",
       });
@@ -61,11 +66,12 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
 
     // Ban appealing when no more quota
     // appealLimits null means no limit on number of appeals each student can submit
-    if (data.assignmentConfig.appealLimits !== null) {
+    if (appealValidationData.assignmentConfig.appealLimits !== null) {
       const appealQuota =
-        data.assignmentConfig.appealLimits - data.assignmentConfig.assignment_appeals_aggregate.aggregate.count;
+        appealValidationData.assignmentConfig.appealLimits -
+        appealValidationData.assignmentConfig.assignment_appeals_aggregate.aggregate.count;
       if (appealQuota === 0) {
-        return res.json({
+        return res.status(403).json({
           status: "error",
           error: "Student has exhausted all appeal quota.",
         });
@@ -73,41 +79,40 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // Previous appeal is still PENDING
-    if (data.appeals.length > 0 && data.appeals[0].status === "PENDING") {
-      return res.json({
+    if (appealValidationData.appeals.length > 0 && appealValidationData.appeals[0].status === "PENDING") {
+      return res.status(403).json({
         status: "error",
         error: "Previous appeal has not been finalized.",
       });
     }
 
     // Appeal time violating appeal period
-    if (!data.assignmentConfig.appealStartAt || !data.assignmentConfig.appealStopAt) {
-      return res.json({
+    if (!appealValidationData.assignmentConfig.appealStartAt || !appealValidationData.assignmentConfig.appealStopAt) {
+      return res.status(403).json({
         status: "error",
         error: "Appeal period not configured. Please consult the course coordinator or TAs.",
       });
     }
-    const now: Date = new Date();
-    const appealStartAt: Date = utcToZonedTime(data.assignmentConfig.appealStartAt, "Asia/Hong_Kong");
-    const appealStopAt: Date = utcToZonedTime(data.assignmentConfig.appealStopAt, "Asia/Hong_Kong");
+    const appealStartAt: Date = utcToZonedTime(appealValidationData.assignmentConfig.appealStartAt, "Asia/Hong_Kong");
+    const appealStopAt: Date = utcToZonedTime(appealValidationData.assignmentConfig.appealStopAt, "Asia/Hong_Kong");
     if (now.getTime() < appealStartAt.getTime()) {
-      return res.json({
+      return res.status(403).json({
         status: "error",
-        error: "Before appeal period.",
+        error: "Should not submit appeal before appeal period.",
       });
     }
     if (now.getTime() >= appealStopAt.getTime()) {
-      return res.json({
+      return res.status(403).json({
         status: "error",
         error: "Late appeal denied.",
       });
     }
 
     // Create appeal entry
-    const result = await axios({
+    const { data: appealResult } = await axios({
       method: "POST",
       headers: {
-        "X-Hasura-Admin-Secret": process.env.HASURA_GRAPHQL_ADMIN_SECRET,
+        cookie: req.headers.cookie,
       },
       url: `http://${process.env.API_URL}/v1/graphql`,
       data: {
@@ -119,11 +124,11 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
         variables: { input: body },
       },
     });
-    console.log(result);
+    console.log(appealResult);
 
     return res.status(201).json({
       status: "success",
-      data: result.data.data,
+      data: appealResult.data,
     });
   } catch (error: any) {
     return res.status(500).json({
