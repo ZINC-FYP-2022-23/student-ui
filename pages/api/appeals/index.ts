@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 import { utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
+import { CREATE_APPEAL } from "@/graphql/mutations/appealMutations";
+import { GET_APPEAL_VALIDATION_DATA } from "@/graphql/queries/appealQueries";
 
 async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
   const body = req.body;
@@ -23,34 +25,7 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
       },
       url: `http://${process.env.API_URL}/v1/graphql`,
       data: {
-        query: `query getAppealValidationData($assignmentConfigId: bigint!, $userId: bigint!) {
-            appeals(
-                limit: 1
-                order_by: {updatedAt: desc}
-                where: {
-                    assignmentConfigId: {_eq: $assignmentConfigId}
-                    userId: {_eq: $userId}
-                }
-            ) {
-              status
-            }
-            assignmentConfig(id: $assignmentConfigId) {
-              appealLimits
-              appealStartAt
-              appealStopAt
-              isAppealAllowed
-              assignment_appeals_aggregate(
-                where: {
-                    assignmentConfigId: {_eq: $assignmentConfigId}
-                    userId: {_eq: $userId}
-                }
-              ) {
-                aggregate {
-                  count
-                }
-              }
-            }
-          }`,
+        query: GET_APPEAL_VALIDATION_DATA.loc?.source.body,
         variables: { assignmentConfigId, userId },
       },
     });
@@ -116,11 +91,7 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
       },
       url: `http://${process.env.API_URL}/v1/graphql`,
       data: {
-        query: `mutation createAppeal($input: assignment_appeals_insert_input!) {
-            createAppeal(object: $input) {
-              id
-            }
-          }`,
+        query: CREATE_APPEAL.loc?.source.body,
         variables: { input: body },
       },
     });

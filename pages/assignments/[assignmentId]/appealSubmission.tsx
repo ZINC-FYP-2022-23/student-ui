@@ -139,8 +139,6 @@ function AppealButton({ userId, assignmentConfigId, comments, newFileSubmissionI
               return;
             }
 
-            const now: Date = new Date();
-
             try {
               const { data } = await axios({
                 method: "POST",
@@ -191,7 +189,7 @@ function AppealButton({ userId, assignmentConfigId, comments, newFileSubmissionI
                 type: "showNotification",
                 payload: {
                   title: "Unable to submit appeal",
-                  message: "Failed to submit appeal due to network issues. Please submit again.\n" + error,
+                  message: "Failed to submit appeal due to network/server issues. Please submit again.\n" + error,
                   success: false,
                 },
               });
