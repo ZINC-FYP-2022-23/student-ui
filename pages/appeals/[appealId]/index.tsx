@@ -3,8 +3,7 @@ import { AppealResult } from "@/components/Appeal/AppealResult";
 import { AppealTextMessage } from "@/components/Appeal/AppealTextMessage";
 import { AssignmentSection } from "@/components/Assignment/List";
 import RichTextEditor from "@/components/RichTextEditor";
-import { LayoutProvider } from "@/contexts/layout";
-import { CREATE_APPEAL_MESSAGE } from "@/graphql/mutations/appealMutations";
+import { LayoutProvider, useLayoutDispatch } from "@/contexts/layout";
 import {
   GET_APPEALS_BY_USER_ID_AND_ASSIGNMENT_ID,
   GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID,
@@ -18,18 +17,18 @@ import {
 import { Layout } from "@/layout";
 import { AppealAttempt, AppealLog, AppealStatus, DisplayMessageType } from "@/types/appeal";
 import { Appeal, AppealMessage, AssignmentConfig, ChangeLog, Submission as SubmissionType } from "@/types/tables";
-import { mergeDataToActivityLogList, transformToAppealAttempt } from "@/utils/appealUtils";
-import { useMutation, useQuery, useSubscription } from "@apollo/client";
+import { isInputEmpty, mergeDataToActivityLogList, transformToAppealAttempt } from "@/utils/appealUtils";
+import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Tab } from "@headlessui/react";
 import { Alert, clsx, createStyles } from "@mantine/core";
-import { zonedTimeToUtc } from "date-fns-tz";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
 import { initializeApollo } from "../../../lib/apollo";
+import axios from "axios";
 
 interface ButtonProps {
   comments: string; // The text message sent to the TA when submitting the appeal
@@ -39,30 +38,56 @@ interface ButtonProps {
 /**
  * Returns a appeal submission button
  */
-function Button({ userId, comments }: ButtonProps) {
+function AppealMessageButton({ userId, comments }: ButtonProps) {
+  const dispatch = useLayoutDispatch();
   const router = useRouter();
   const { appealId } = router.query;
-  const now = new Date();
-  const [createAppealMessage] = useMutation(CREATE_APPEAL_MESSAGE);
 
   return (
     <button
-      className="px-4 py-1 rounded-md text-lg bg-green-500 text-white hover:bg-green-600 active:bg-green-700 transition ease-in-out duration-150"
+      className="px-4 py-1 rounded-md text-lg bg-green-500 text-white hover:bg-green-600 active:bg-green-700 disabled:bg-gray-400 transition ease-in-out duration-150"
+      // Disable the Send Message Button if the text editor is empty
+      disabled={isInputEmpty(comments)}
       onClick={async () => {
         // Check if the text message blank. The student should filled in something for the appeal.
-        if (comments === null || comments === "") {
-          alert("Please Fill All Required Field");
+        if (isInputEmpty(comments)) {
+          alert("Cannot submit empty message");
         } else {
-          createAppealMessage({
-            variables: {
-              input: {
+          try {
+            await axios({
+              method: "POST",
+              url: `/api/appeals/messages`,
+              data: {
                 message: comments,
                 senderId: userId,
-                appealId: appealId,
-                createdAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
+                appealId,
               },
-            },
-          });
+            });
+
+            return;
+          } catch (error: any) {
+            const { status: statusCode, data: responseJson } = error.response;
+            if (statusCode === 403) {
+              // 403 Forbidden
+              dispatch({
+                type: "showNotification",
+                payload: {
+                  title: "Appeal message denied",
+                  message: responseJson.error,
+                  success: false,
+                },
+              });
+              return;
+            }
+            dispatch({
+              type: "showNotification",
+              payload: {
+                title: "Unable to send appeal message",
+                message: "Failed to send appeal message due to network/server issues. Please submit again.\n" + error,
+                success: false,
+              },
+            });
+          }
         }
       }}
     >
@@ -87,7 +112,6 @@ interface ActivityLogTabProps {
  */
 function ActivityLogTab({ userId, activityLogList, isAppealStudentReplyAllowed }: ActivityLogTabProps) {
   const [comments, setComments] = useState("");
-  const [createAppealMessage] = useMutation(CREATE_APPEAL_MESSAGE);
 
   return (
     <div className="flex flex-col">
@@ -125,12 +149,9 @@ function ActivityLogTab({ userId, activityLogList, isAppealStudentReplyAllowed }
             ]}
           />
           <div className="py-1" />
-          {/* Hide the Send Message Button if the text editor is empty */}
-          {comments && comments !== "<p><br></p>" && (
-            <div className="flex justify-center">
-              <Button userId={userId} comments={comments} />
-            </div>
-          )}
+          <div className="flex justify-center">
+            <AppealMessageButton userId={userId} comments={comments} />
+          </div>
         </div>
       )}
     </div>
