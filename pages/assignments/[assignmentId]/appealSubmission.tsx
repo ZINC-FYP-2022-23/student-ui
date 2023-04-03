@@ -11,6 +11,7 @@ import { SUBMISSION_SUBSCRIPTION } from "@/graphql/queries/user";
 import { Layout } from "@/layout";
 import { initializeApollo } from "@/lib/apollo";
 import { Submission } from "@/types";
+import { isInputEmpty } from "@/utils/appealUtils";
 import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "@mantine/core";
@@ -50,6 +51,7 @@ function AppealFileSubmission({ allowUpload, configId, setNewFileSubmissionId }:
           .then(async ({ status, id }: any) => {
             if (status === "success") {
               setNewFileSubmissionId(id);
+              // TODO: Save ID in session storage
               dispatch({
                 type: "showNotification",
                 payload: {
@@ -128,7 +130,7 @@ function AppealButton({ userId, assignmentConfigId, comments, newFileSubmissionI
         className="px-4 py-1 rounded-md text-lg bg-green-500 text-white hover:bg-green-600 active:bg-green-700 transition ease-in-out duration-150"
         onClick={async () => {
           // Check if the text message blank. The student should filled in something for the appeal.
-          if (comments === null || comments === "") {
+          if (isInputEmpty(comments)) {
             alert("Please Fill All Required Field");
           } else {
             // Let student double check if they included submission file
