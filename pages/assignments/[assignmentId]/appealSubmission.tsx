@@ -7,7 +7,7 @@ import {
   GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID,
   GET_APPEAL_CONFIG,
 } from "@/graphql/queries/appealQueries";
-import { SUBMISSION_SUBSCRIPTION } from "@/graphql/queries/user";
+import { SUBMISSION_QUERY } from "@/graphql/queries/user";
 import { Layout } from "@/layout";
 import { initializeApollo } from "@/lib/apollo";
 import { Submission } from "@/types";
@@ -306,7 +306,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     data: submissionsData,
     loading: submissionLoading,
     error: submissionsError,
-  } = useSubscription<{ submissions: Submission[] }>(SUBMISSION_SUBSCRIPTION, {
+  } = useQuery<{ submissions: Submission[] }>(SUBMISSION_QUERY, {
     variables: { userId, assignmentConfigId: assignmentId },
   });
   const {
@@ -384,14 +384,15 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   }
 
-  // Determine whether student got full mark in the latest submission
-  let isFullMark: boolean = false;
   // Get the latest score
-  let score: number = -1;
   // 1. Get score from latest, non-appeal submission
-  score = submissionsData?.submissions
-    .filter((e) => !e.isAppeal && e.reports && e.reports.length > 0)[0]
-    .reports.filter((e) => e.grade && e.grade.score)[0].grade.score;
+  const nonAppealSubmissions = submissionsData.submissions.filter(
+    (e) => !e.isAppeal && e.reports && e.reports.length > 0,
+  );
+  const reports =
+    nonAppealSubmissions.length > 0 ? nonAppealSubmissions[0].reports.filter((e) => e.grade && e.grade.score) : null;
+
+  let score = reports && reports.length > 0 ? reports[0].grade.score : null;
   // let cont: boolean = true;
   // for (let i = 0; submissionsData && cont && i < submissionsData.submissions.length; i++) {
   //   cont = false;
@@ -408,10 +409,8 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
   //   }
   // }
   // 2. Replace with score from appeal or `SCORE` change log (if any)
-  let latestAppealUpdateDate: Date | null = null;
-  if (appealDetailsData.appeals[0]) {
-    latestAppealUpdateDate = new Date(appealDetailsData.appeals[0].updatedAt);
-  }
+  const latestAppealUpdateDate = appealDetailsData.appeals[0] ? new Date(appealDetailsData.appeals[0].updatedAt) : null;
+
   for (let i = 0; i < appealChangeLogData.changeLogs.length; i++) {
     const logDate: Date = new Date(appealChangeLogData.changeLogs[i].createdAt);
     if (
@@ -433,7 +432,8 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     .filter((e) => !e.isAppeal)[0]
     .reports.filter((e) => e.grade && e.grade.details)[0].grade.details.accTotal;
 
-  if (score === maxScore) isFullMark = true;
+  // Determine whether student got full mark in the latest submission
+  const isFullMark = score === maxScore ? true : false;
 
   return (
     <LayoutProvider>

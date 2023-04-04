@@ -91,6 +91,26 @@ export const SUBMISSION_SUBSCRIPTION = gql`
   }
 `;
 
+export const SUBMISSION_QUERY = gql`
+  query submissionsForAssignment($userId: bigint, $assignmentConfigId: bigint!) {
+    submissions(
+      order_by: [{ created_at: desc }]
+      where: { user_id: { _eq: $userId }, assignment_config_id: { _eq: $assignmentConfigId } }
+    ) {
+      id
+      created_at
+      upload_name
+      fail_reason
+      reports(order_by: [{ createdAt: desc }]) {
+        id
+        is_final
+        createdAt
+        grade
+      }
+    }
+  }
+`;
+
 export const GET_ASSIGNMENTS = gql`
   query getAssignmentsFromCourses($courseIds: [bigint!]!, $userId: bigint!) {
     user(id: $userId) {
