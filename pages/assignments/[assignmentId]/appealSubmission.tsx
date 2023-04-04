@@ -408,10 +408,14 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
   //   }
   // }
   // 2. Replace with score from appeal or `SCORE` change log (if any)
-  const latestAppealUpdateDate: Date = new Date(appealDetailsData.appeals[0].updatedAt);
+  let latestAppealUpdateDate: Date | null = null;
+  if (appealDetailsData.appeals[0]) {
+    latestAppealUpdateDate = new Date(appealDetailsData.appeals[0].updatedAt);
+  }
   for (let i = 0; i < appealChangeLogData.changeLogs.length; i++) {
     const logDate: Date = new Date(appealChangeLogData.changeLogs[i].createdAt);
     if (
+      latestAppealUpdateDate &&
       logDate < latestAppealUpdateDate &&
       appealDetailsData.appeals[0].latestStatus === "ACCEPTED" &&
       appealDetailsData.appeals[0].newFileSubmissionId &&
