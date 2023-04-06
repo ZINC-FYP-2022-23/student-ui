@@ -278,3 +278,12 @@ export function mergeDataToActivityLogList({
 
   return activityLogList;
 }
+
+// Check whether RichTextEditor HTML string will render to become whitespace
+// Reference: https://stackoverflow.com/questions/44675983/how-to-detect-whether-html-content-when-rendered-is-blank-whitespace
+export function isInputEmpty(html: string) {
+  const visible = ["img", "iframe", "object", "hr", "audio", "video", "form", "button", "input", "select", "textarea"];
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  return !(container.innerText.trim().length > 0 || container.querySelector(visible.join(",")));
+}

@@ -15,7 +15,6 @@ import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "@mantine/core";
 import axios from "axios";
-import { zonedTimeToUtc } from "date-fns-tz";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -124,9 +123,6 @@ function AppealButton({ userId, assignmentConfigId, comments, disabled, setButto
                 url: `/api/appeals`,
                 data: {
                   assignmentConfigId,
-                  createdAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
-                  status: "PENDING",
-                  updatedAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
                   userId,
                   newFileSubmissionId,
                   assignment_appeal_messages: {
@@ -134,7 +130,6 @@ function AppealButton({ userId, assignmentConfigId, comments, disabled, setButto
                       {
                         message: comments,
                         senderId: userId,
-                        createdAt: zonedTimeToUtc(now, "Asia/Hong_Kong"),
                       },
                     ],
                   },
@@ -167,12 +162,25 @@ function AppealButton({ userId, assignmentConfigId, comments, disabled, setButto
               // Redirect to appeal page
               // router.push(`/assignments/${assignmentConfigId}`);
               router.push(`/appeals/${data.data.createAppeal.id}`);
-            } catch (error) {
+            } catch (error: any) {
+              const { status: statusCode, data: responseJson } = error.response;
+              if (statusCode === 403) {
+                // 403 Forbidden
+                dispatch({
+                  type: "showNotification",
+                  payload: {
+                    title: "Appeal denied",
+                    message: responseJson.error,
+                    success: false,
+                  },
+                });
+                return;
+              }
               dispatch({
                 type: "showNotification",
                 payload: {
                   title: "Unable to submit appeal",
-                  message: "Failed to submit appeal due to network issues. Please submit again.\n" + error,
+                  message: "Failed to submit appeal due to network/server issues. Please submit again.\n" + error,
                   success: false,
                 },
               });

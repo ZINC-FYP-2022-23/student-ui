@@ -196,3 +196,47 @@ export const GET_IDS_BY_APPEAL_ID = gql`
   }
 `;
 /* End of Queries used in `Appeal Details Page` */
+
+/* Queries used in API endpoints */
+// Validation data for creating appeal
+export const GET_APPEAL_VALIDATION_DATA = gql`
+  query getAppealValidationData($assignmentConfigId: bigint!, $userId: bigint!) {
+    appeals(
+      limit: 1
+      order_by: { updatedAt: desc }
+      where: { assignmentConfigId: { _eq: $assignmentConfigId }, userId: { _eq: $userId } }
+    ) {
+      status
+    }
+    assignmentConfig(id: $assignmentConfigId) {
+      appealLimits
+      appealStartAt
+      appealStopAt
+      isAppealAllowed
+      assignment_appeals_aggregate(
+        where: { assignmentConfigId: { _eq: $assignmentConfigId }, userId: { _eq: $userId } }
+      ) {
+        aggregate {
+          count
+        }
+      }
+    }
+  }
+`;
+
+// Validation data for sending appeal messages
+export const GET_APPEAL_MESSAGE_VALIDATION_DATA = gql`
+  query getAppealMessageValidationData($appealId: bigint!, $senderId: bigint!) {
+    appeal(id: $appealId) {
+      createdAt
+      assignment_config {
+        appealStartAt
+        isAppealStudentReplyAllowed
+        isAppealAllowed
+      }
+    }
+    user(id: $senderId) {
+      isAdmin
+    }
+  }
+`;
