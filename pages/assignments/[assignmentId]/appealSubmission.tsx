@@ -22,111 +22,61 @@ import { useRouter } from "next/router";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
-interface AppealFileSubmissionType {
-  allowUpload: boolean; // Is the student allowed to upload files when submitting an appeal
-  configId: any;
-  setNewFileSubmissionId: (x: number | null) => void;
-}
-
-/**
- * Returns a component that allows file to be submitted along with the appeal
- */
-function AppealFileSubmission({ allowUpload, configId, setNewFileSubmissionId }: AppealFileSubmissionType) {
-  const { user, submitFile } = useZinc();
-  const dispatch = useLayoutDispatch();
-
-  const onDrop = useCallback(
-    (files) => {
-      if (files.length === 0) {
+// TODO(BRYAN): Remove this when it's done
+/*const onDrop = useCallback(
+  (files) => {
+    setButtonDisabled(true);
+    submitFile(files, true)
+      .then(async ({ status, id }: any) => {
+        if (status === "success") {
+          setNewFileSubmissionId(id);
+          dispatch({
+            type: "showNotification",
+            payload: {
+              title: "Upload success",
+              message: "Submission files for appeal uploaded.",
+              success: true,
+            },
+          });
+        }
+      })
+      .catch((error) => {
         dispatch({
           type: "showNotification",
-          payload: {
-            title: "Invalid file type",
-            message: "Your submission contains file that are not supported, please try again",
-            success: false,
-          },
+          payload: { title: "Failed to upload submission files", message: error.message, success: false },
         });
-      } else {
-        submitFile(files, true)
-          .then(async ({ status, id }: any) => {
-            if (status === "success") {
-              setNewFileSubmissionId(id);
-              dispatch({
-                type: "showNotification",
-                payload: {
-                  title: "Upload success",
-                  message: "Submission files for appeal uploaded.",
-                  success: true,
-                },
-              });
-            }
-          })
-          .catch((error) => {
-            dispatch({
-              type: "showNotification",
-              payload: { title: "Failed to upload submission files", message: error.message, success: false },
-            });
-          });
-      }
-    },
-    [configId],
-  );
+      });
+    setButtonDisabled(false);
+  }, [configId],
+);*/
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: ".h,.cpp,.rar,.zip,application/octet-stream,application/zip,application/x-zip,application/x-zip-compressed",
-  });
-
-  if (!allowUpload) {
-    return (
-      <div className="rounded-lg bg-gray-200 w-full py-4 flex flex-col items-center justify-center">
-        <FontAwesomeIcon className="text-gray-500" icon={["fad", "calendar-exclamation"]} size="3x" />
-        <h4 className="mt-4 font-medium text-gray-500">File Submission is NOT allowed</h4>
-        <p className="text-sm text-gray-400">You are not allowed to submit file(s)</p>
-      </div>
-    );
-  } else {
-    return (
-      <div
-        {...getRootProps()}
-        className={`mt-2 flex justify-center px-6 pt-5 pb-6 border-2 focus:outline-none w-full ${
-          isDragActive ? "border-blue-400" : "border-gray-300"
-        } border-dashed rounded-md`}
-      >
-        <div className="text-center">
-          <FontAwesomeIcon icon={["fad", "upload"]} size="2x" />
-          <p className="mt-1 text-sm text-gray-600">
-            <input {...getInputProps()} />
-            <button className="mr-1 font-medium text-cse-600 hover:text-cse-500 focus:outline-none focus:underline transition duration-150 ease-in-out">
-              Upload a file
-            </button>
-            or drag and drop
-          </p>
-          <p className="mt-1 text-xs text-gray-500">ZIP file up to 10MB</p>
-        </div>
-      </div>
-    );
-  }
-}
-
-interface ButtonProps {
+interface AppealButtonProps {
   comments: string; // The text message sent to the TA when submitting the appeal
   userId: number;
   assignmentConfigId: number;
-  newFileSubmissionId: number | null;
+  disabled: boolean;
+  setButtonDisabled;
+  files: File[];
 }
 
 /**
  * Returns a appeal submission button
  */
-function AppealButton({ userId, assignmentConfigId, comments, newFileSubmissionId }: ButtonProps) {
+function AppealButton({ userId, assignmentConfigId, comments, disabled, setButtonDisabled, files }: AppealButtonProps) {
+  const { submitFile } = useZinc();
   const dispatch = useLayoutDispatch();
   const router = useRouter();
+  let newFileSubmissionId: number | null = null;
+
+  const buttonStyle = disabled
+    ? "px-4 py-1 rounded-md text-lg bg-gray-300 text-white transition ease-in-out duration-150"
+    : "px-4 py-1 rounded-md text-lg bg-green-500 text-white hover:bg-green-600 active:bg-green-700 transition ease-in-out duration-150";
 
   return (
     <div>
       <button
-        className="px-4 py-1 rounded-md text-lg bg-green-500 text-white hover:bg-green-600 active:bg-green-700 transition ease-in-out duration-150"
+        className={buttonStyle}
+        disabled={disabled}
         onClick={async () => {
           // Check if the text message blank. The student should filled in something for the appeal.
           if (comments === null || comments === "") {
@@ -134,14 +84,40 @@ function AppealButton({ userId, assignmentConfigId, comments, newFileSubmissionI
           } else {
             // Let student double check if they included submission file
             if (
-              newFileSubmissionId === null &&
+              files.length === 0 &&
               !confirm("You are filing this appeal without submission file(s). Are you sure?")
             ) {
               return;
             }
 
+            // Disable the button
+            setButtonDisabled(true);
+
             const now: Date = new Date();
 
+            // Submit the new file(s)
+            await submitFile(files, true)
+              .then(async ({ status, id }: any) => {
+                if (status === "success") {
+                  newFileSubmissionId = id;
+                  dispatch({
+                    type: "showNotification",
+                    payload: {
+                      title: "Upload success",
+                      message: "Submission files for appeal uploaded.",
+                      success: true,
+                    },
+                  });
+                }
+              })
+              .catch((error) => {
+                dispatch({
+                  type: "showNotification",
+                  payload: { title: "Failed to upload submission files", message: error.message, success: false },
+                });
+              });
+
+            // GraphQL mutation
             try {
               const { data } = await axios({
                 method: "POST",
@@ -165,6 +141,7 @@ function AppealButton({ userId, assignmentConfigId, comments, newFileSubmissionI
                 },
               });
 
+              // Notify error (if any)
               if (data.error) {
                 dispatch({
                   type: "showNotification",
@@ -292,8 +269,29 @@ interface AppealSubmissionProps {
  * The Appeal Submission page
  */
 function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
-  const [comments, setComments] = useState("");
-  const [newFileSubmissionId, setNewFileSubmissionId] = useState<number | null>(null);
+  const [comments, setComments] = useState<string>("");
+  const dispatch = useLayoutDispatch();
+  const [disabled, setDisabled] = useState<boolean>(false); // Set the Appeal Button to enable or disabled
+  const onDrop = useCallback(
+    (acceptedFiles) => {
+      if (acceptedFiles.length === 0) {
+        dispatch({
+          type: "showNotification",
+          payload: {
+            title: "Invalid file type",
+            message: "Your submission contains file that are not supported, please try again",
+            success: false,
+          },
+        });
+      }
+    },
+    [assignmentId],
+  );
+
+  const { acceptedFiles, getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: ".h,.cpp,.rar,.zip,application/octet-stream,application/zip,application/x-zip,application/x-zip-compressed",
+  });
   const now = new Date();
 
   // Fetch data with GraphQL
@@ -393,7 +391,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     nonAppealSubmissions.length > 0 ? nonAppealSubmissions[0].reports.filter((e) => e.grade && e.grade.score) : null;
 
   let score = reports && reports.length > 0 ? reports[0].grade.score : null;
-  // let cont: boolean = true;
+  /* let cont: boolean = true;
   // for (let i = 0; submissionsData && cont && i < submissionsData.submissions.length; i++) {
   //   cont = false;
   //   for (let j = 0; j < appealDetailsData.appeals.length; j++) {
@@ -407,7 +405,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
   //     score = submissionsData.submissions[i].reports[0].grade?.score;
   //     break;
   //   }
-  // }
+  // }*/
   // 2. Replace with score from appeal or `SCORE` change log (if any)
   const latestAppealUpdateDate = appealDetailsData.appeals[0] ? new Date(appealDetailsData.appeals[0].updatedAt) : null;
 
@@ -441,6 +439,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
         <main className="flex-1 flex bg-gray-200">
           <AssignmentSection />
           <div className="p-5 flex flex-1 flex-col overflow-y-auto">
+            {/* Back Button */}
             <Link href={`/assignments/${assignmentId}`}>
               <a className="max-w-max-content w-max px-3 py-1.5 mb-3 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
                 <FontAwesomeIcon icon={["far", "chevron-left"]} className="mr-2" />
@@ -466,7 +465,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                 />
                 {/* End of Justification and Comments */}
               </div>
-              {/* Start of Upload Fixed Code */}
+              {/* Upload Code */}
               <div className="my-6">
                 <h2 className="mb-2 font-semibold text-lg">Upload fixed code</h2>
                 <p className="mb-4 text-sm text-gray-600">
@@ -474,15 +473,38 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                   system will find out the fixed codes automatically.
                 </p>
                 <div className="bg-white p-4 rounded-md">
-                  <AppealFileSubmission
-                    allowUpload={true}
-                    configId={assignmentId}
-                    setNewFileSubmissionId={setNewFileSubmissionId}
-                  />
+                  <div
+                    {...getRootProps()}
+                    className={`mt-2 flex justify-center px-6 pt-5 pb-6 border-2 focus:outline-none w-full ${
+                      isDragActive ? "border-blue-400" : "border-gray-300"
+                    } border-dashed rounded-md`}
+                  >
+                    <div className="text-center">
+                      <FontAwesomeIcon icon={["fad", "upload"]} size="2x" />
+                      <p className="mt-1 text-sm text-gray-600">
+                        <input {...getInputProps()} />
+                        <button className="mr-1 font-medium text-cse-600 hover:text-cse-500 focus:outline-none focus:underline transition duration-150 ease-in-out">
+                          Upload a file
+                        </button>
+                        or drag and drop
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">ZIP file up to 10MB</p>
+                    </div>
+                  </div>
                 </div>
+                {acceptedFiles.length != 0 && (
+                  <div className="mt-4">
+                    <h4 className="mb-2 font-semibold">Uploaded Files:</h4>
+                    {acceptedFiles.map((file) => (
+                      <li key={file.name} className="ml-4">
+                        {file.name} - {file.size} bytes
+                      </li>
+                    ))}
+                  </div>
+                )}
               </div>
-              {/* End of Upload Fixed Code */}
-              <div className="mt-8 flex flex-col items-center self-center w-full">
+              {/* Show number of appeal attempts left and submit button */}
+              <div className="mt-3 flex flex-col items-center self-center w-full">
                 <div className="flex items-center mb-4">
                   <FontAwesomeIcon icon={["far", "exclamation-triangle"]} className="text-orange-600 mr-2 text-lg" />
                   <p className="text-orange-600">
@@ -499,10 +521,13 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                       </p>
                     </div>
                     <AppealButton
+                      // 3. TODO(Bryan) Pass `acceptedFiles` from `useDropzone()` hook
                       userId={userId}
                       assignmentConfigId={assignmentId}
                       comments={comments}
-                      newFileSubmissionId={newFileSubmissionId}
+                      disabled={disabled}
+                      setButtonDisabled={setDisabled}
+                      files={acceptedFiles}
                     />
                   </div>
                 ) : (
@@ -510,7 +535,9 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                     userId={userId}
                     assignmentConfigId={assignmentId}
                     comments={comments}
-                    newFileSubmissionId={newFileSubmissionId}
+                    disabled={disabled}
+                    setButtonDisabled={setDisabled}
+                    files={acceptedFiles}
                   />
                 )}
               </div>
