@@ -47,6 +47,7 @@ function AssignmentSubmission({ submissionClosed, configId, isOpen }) {
           },
         });
       } else {
+        // @ts-ignore
         submitFile(files)
           .then(async ({ status }: any) => {
             if (status === "success") {
@@ -212,8 +213,12 @@ function GradePanel({
   appealAttempt,
   appealConfigData,
 }: GradePanelProps) {
-  const appealId: number = appealAttempt.id;
-  const appealStatus: AppealStatus = appealAttempt.latestStatus; // Latest status of the submitted appeal (if any)
+  let appealId: number | null = null;
+  let appealStatus: AppealStatus | null = null; // Latest status of the submitted appeal (if any)
+  if (appealAttempt) {
+    appealId = appealAttempt.id;
+    appealStatus = appealAttempt.latestStatus;
+  }
   const now = new Date();
 
   // Error if appealConfigData is undefined or null
@@ -240,12 +245,6 @@ function GradePanel({
   let gradeTextColor: string = "";
   let attemptLeftTextColor: string = "";
   switch (appealStatus) {
-    case AppealStatus.Accept:
-      backgroundColor = "bg-green-50";
-      gradeTextColor = "text-green-800";
-      attemptLeftTextColor = "text-green-600";
-      break;
-
     case AppealStatus.Reject:
       backgroundColor = "bg-red-50";
       gradeTextColor = "text-red-800";
@@ -258,11 +257,9 @@ function GradePanel({
       break;
 
     default:
-      return (
-        <div>
-          <p>Error: Appeal Status is undefined!</p>
-        </div>
-      );
+      backgroundColor = "bg-green-50";
+      gradeTextColor = "text-green-800";
+      attemptLeftTextColor = "text-green-600";
       break;
   }
   const divCss = "w-full mt-4 py-3 flex flex-col items-center rounded-lg " + backgroundColor;
@@ -274,8 +271,12 @@ function GradePanel({
       <p className={gradeTextCss}>
         Your Grade: <span className="font-bold">{score}</span>/{maxScore}
       </p>
-      <AppealDetailsButton appealId={appealId} />
-      <AppealResult appealResult={appealStatus} />
+      {appealId && appealStatus && (
+        <>
+          <AppealDetailsButton appealId={appealId} />
+          <AppealResult appealResult={appealStatus} />
+        </>
+      )}
       {/* Only allow students to submit an appeal if latest appeal has been accepted or rejected */}
       {appealStatus != AppealStatus.Pending && (
         <>
@@ -401,8 +402,7 @@ function getScore({ appeals, changeLogs, submissions }: getScoreProps) {
     if (
       acceptedAppeals[i].updatedAt &&
       acceptedAppeals[i].submission &&
-      acceptedAppeals[i].submission.reports.length > 0 &&
-      acceptedAppeals[i].submission.reports[0].grade.score
+      acceptedAppeals[i].submission.reports.length > 0
     ) {
       acceptedAppealDate = new Date(acceptedAppeals[i].updatedAt!);
       acceptedAppealScore = acceptedAppeals[i].submission.reports[0].grade.score;
@@ -518,13 +518,19 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
   if (appealAttemptLeft < 0) appealAttemptLeft = 0;
 
   // Get the original score
-  const score: number = getScore({
+  const score = getScore({
     appeals: appealsDetailsData!.appeals,
     changeLogs: appealChangeLogData!.changeLogs,
     submissions: submissionData!.submissions,
-  })!;
+  });
 
-  const maxScore: number = appealsDetailsData!.appeals[0].user.submissions[0].reports[0].grade.maxTotal;
+  let maxScore: number;
+  if (appealsDetailsData!.appeals[0]) {
+    maxScore = appealsDetailsData!.appeals[0].user.submissions[0].reports[0].grade.maxTotal;
+  } else {
+    const nonAppealSubmissions: SubmissionType[] = submissionData!.submissions.filter((e) => !e.isAppeal);
+    maxScore = nonAppealSubmissions[0].reports[0].grade.maxTotal;
+  }
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -589,7 +595,7 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
                 submissionClosed={content.submissionWindowPassed}
                 isOpen={content.openForSubmission}
               />
-              {score && maxScore && (
+              {score != null && score != undefined && maxScore && (
                 <GradePanel
                   content={content}
                   assignmentId={content.id}
