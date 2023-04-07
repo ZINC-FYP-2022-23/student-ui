@@ -12,7 +12,7 @@ interface ZincContextState {
   useSidebar: () => any;
   visibleCourses: Array<number>;
   setVisibleCourses: React.Dispatch<React.SetStateAction<number[]>>;
-  submitFile: (files, isAppeal) => Promise<void>;
+  submitFile: (files, isAppeal?: boolean) => Promise<void>;
 }
 
 interface ZincProviderProps {
