@@ -89,6 +89,10 @@ async function handlePostAppealMessage(req: NextApiRequest, res: NextApiResponse
     });
     console.log(result);
 
+    if (result.errors) {
+      throw Error(JSON.stringify(result.errors));
+    }
+
     return res.status(201).json({
       status: "success",
       data: result.data,
