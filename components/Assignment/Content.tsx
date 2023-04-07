@@ -277,7 +277,7 @@ function GradePanel({
           <AppealResult appealResult={appealStatus} />
         </>
       )}
-      {/* Only allow students to submit an appeal if latest appeal has been accepted or rejected */}
+      {/* Only allow students to submit an appeal if not appealed before or latest appeal has been accepted or rejected */}
       {appealStatus != AppealStatus.Pending && (
         <>
           <AppealGradeButton assignmentId={assignmentId} disabled={appealGradeButtonDisabled} />
@@ -524,13 +524,8 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
     submissions: submissionData!.submissions,
   });
 
-  let maxScore: number;
-  if (appealsDetailsData!.appeals[0]) {
-    maxScore = appealsDetailsData!.appeals[0].user.submissions[0].reports[0].grade.maxTotal;
-  } else {
-    const nonAppealSubmissions: SubmissionType[] = submissionData!.submissions.filter((e) => !e.isAppeal);
-    maxScore = nonAppealSubmissions[0].reports[0].grade.maxTotal;
-  }
+  let maxScore: number = submissionData!.submissions.filter((e) => !e.isAppeal && e.reports.length > 0)[0].reports[0]
+    .grade.maxTotal;
 
   return (
     <div className="flex-1 overflow-y-auto">
