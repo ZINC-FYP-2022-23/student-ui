@@ -93,8 +93,6 @@ function AppealButton({ userId, assignmentConfigId, comments, disabled, setButto
             // Disable the button
             setButtonDisabled(true);
 
-            const now: Date = new Date();
-
             // Submit the new file(s)
             await submitFile(files, true)
               .then(async ({ status, id }: any) => {
@@ -115,9 +113,11 @@ function AppealButton({ userId, assignmentConfigId, comments, disabled, setButto
                   type: "showNotification",
                   payload: { title: "Failed to upload submission files", message: error.message, success: false },
                 });
+                setButtonDisabled(false);
+                return;
               });
 
-            // GraphQL mutation
+            // Submit appeal
             try {
               const { data } = await axios({
                 method: "POST",
@@ -137,19 +137,6 @@ function AppealButton({ userId, assignmentConfigId, comments, disabled, setButto
                 },
               });
 
-              // Notify error (if any)
-              if (data.error) {
-                dispatch({
-                  type: "showNotification",
-                  payload: {
-                    title: "Appeal denied",
-                    message: data.error,
-                    success: false,
-                  },
-                });
-                return;
-              }
-
               // Notify success
               dispatch({
                 type: "showNotification",
@@ -165,6 +152,7 @@ function AppealButton({ userId, assignmentConfigId, comments, disabled, setButto
               router.push(`/appeals/${data.data.createAppeal.id}`);
             } catch (error: any) {
               const { status: statusCode, data: responseJson } = error.response;
+              setButtonDisabled(false);
               if (statusCode === 403) {
                 // 403 Forbidden
                 dispatch({
@@ -177,11 +165,14 @@ function AppealButton({ userId, assignmentConfigId, comments, disabled, setButto
                 });
                 return;
               }
+              // Other errors
               dispatch({
                 type: "showNotification",
                 payload: {
                   title: "Unable to submit appeal",
-                  message: "Failed to submit appeal due to network/server issues. Please submit again.\n" + error,
+                  message:
+                    "Failed to submit appeal due to network/server issues. Please submit again. Note that there is no need to submit the file again.\n" +
+                    error,
                   success: false,
                 },
               });
