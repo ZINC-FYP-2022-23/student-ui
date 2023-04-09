@@ -10,7 +10,7 @@ import {
 import { SUBMISSION_QUERY } from "@/graphql/queries/user";
 import { Layout } from "@/layout";
 import { initializeApollo } from "@/lib/apollo";
-import { Submission } from "@/types";
+import { Appeal, ChangeLog, Submission } from "@/types";
 import { isInputEmpty } from "@/utils/appealUtils";
 import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -54,21 +54,20 @@ interface AppealButtonProps {
   comments: string; // The text message sent to the TA when submitting the appeal
   userId: number;
   assignmentConfigId: number;
-  disabled: boolean;
-  setButtonDisabled;
   files: File[];
 }
 
 /**
  * Returns a appeal submission button
  */
-function AppealButton({ userId, assignmentConfigId, comments, disabled, setButtonDisabled, files }: AppealButtonProps) {
+function AppealButton({ userId, assignmentConfigId, comments, files }: AppealButtonProps) {
+  const [buttonDisabled, setButtonDisabled] = useState<boolean>(true);
   const { submitFile } = useZinc();
   const dispatch = useLayoutDispatch();
   const router = useRouter();
   let newFileSubmissionId: number | null = null;
 
-  const buttonStyle = disabled
+  const buttonStyle = buttonDisabled
     ? "px-4 py-1 rounded-md text-lg bg-gray-300 text-white transition ease-in-out duration-150"
     : "px-4 py-1 rounded-md text-lg bg-green-500 text-white hover:bg-green-600 active:bg-green-700 transition ease-in-out duration-150";
 
@@ -76,7 +75,7 @@ function AppealButton({ userId, assignmentConfigId, comments, disabled, setButto
     <div>
       <button
         className={buttonStyle}
-        disabled={disabled}
+        disabled={buttonDisabled}
         onClick={async () => {
           // Check if the text message blank. The student should filled in something for the appeal.
           if (isInputEmpty(comments)) {
@@ -271,7 +270,6 @@ interface AppealSubmissionProps {
 function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
   const [comments, setComments] = useState<string>("");
   const dispatch = useLayoutDispatch();
-  const [disabled, setDisabled] = useState<boolean>(false); // Set the Appeal Button to enable or disabled
   const onDrop = useCallback(
     (acceptedFiles) => {
       if (acceptedFiles.length === 0) {
@@ -311,14 +309,14 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     data: appealDetailsData,
     loading: appealDetailsLoading,
     error: appealDetailsError,
-  } = useSubscription(GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID, {
+  } = useSubscription<{ appeals: Appeal[] }>(GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID, {
     variables: { userId, assignmentConfigId: assignmentId },
   });
   const {
     data: appealChangeLogData,
     loading: appealChangeLogLoading,
     error: appealChangeLogError,
-  } = useSubscription(GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID, {
+  } = useSubscription<{ changeLogs: ChangeLog[] }>(GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID, {
     variables: { userId, assignmentConfigId: assignmentId },
   });
 
@@ -358,13 +356,13 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     // Error if there's no submission
     const errorMessage = "You have not submitted anything yet for this assignment.";
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
-  } else if (submissionsData?.submissions[0].reports.length === 0) {
-    // Error if submission is still being processed
-    const errorMessage =
-      "Submission is still being processed. Please wait for a few seconds and do not refresh the page.";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+    // } else if (submissionsData?.submissions[0].reports.length === 0) {
+    //   // Error if submission is still being processed
+    //   const errorMessage =
+    //     "Submission is still being processed. Please wait for a few seconds and do not refresh the page.";
+    //   return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   } else if (
-    appealDetailsData.appeals &&
+    appealDetailsData?.appeals &&
     appealDetailsData.appeals[0] &&
     appealDetailsData.appeals[0].status === "PENDING"
   ) {
@@ -374,10 +372,14 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
   }
 
   // Get how many appeal attempts left that can be made
-  let numAppealsLeft: number = appealConfigData.assignmentConfig.appealLimits - appealDetailsData.appeals.length;
+  let numAppealsLeft: number | null = appealConfigData.assignmentConfig.appealLimits
+    ? appealDetailsData?.appeals.length
+      ? appealConfigData.assignmentConfig.appealLimits - appealDetailsData.appeals.length
+      : appealConfigData.assignmentConfig.appealLimits
+    : null;
 
   // New appeal cannot be submitted if numAppealsLeft < 1
-  if (numAppealsLeft < 1) {
+  if (!numAppealsLeft || numAppealsLeft! < 1) {
     const errorMessage = "You cannot submit anymore new appeals.";
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   }
@@ -391,44 +393,33 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     nonAppealSubmissions.length > 0 ? nonAppealSubmissions[0].reports.filter((e) => e.grade && e.grade.score) : null;
 
   let score = reports && reports.length > 0 ? reports[0].grade.score : null;
-  /* let cont: boolean = true;
-  // for (let i = 0; submissionsData && cont && i < submissionsData.submissions.length; i++) {
-  //   cont = false;
-  //   for (let j = 0; j < appealDetailsData.appeals.length; j++) {
-  //     if (submissionsData.submissions[i].id === appealDetailsData.appeals[j].newFileSubmissionId) {
-  //       cont = true;
-  //       break;
-  //     }
-  //   }
-  //   if (!cont) {
-  //     // TODO(Owen): grade can be null
-  //     score = submissionsData.submissions[i].reports[0].grade?.score;
-  //     break;
-  //   }
-  // }*/
-  // 2. Replace with score from appeal or `SCORE` change log (if any)
-  const latestAppealUpdateDate = appealDetailsData.appeals[0] ? new Date(appealDetailsData.appeals[0].updatedAt) : null;
+  // Get the latest `ACCEPTED` appeal with a new score generated
+  const latestAcceptedAppeal: Appeal | undefined = appealDetailsData?.appeals.find(
+    (e) => e.status === "ACCEPTED" && e.newFileSubmissionId,
+  );
 
-  for (let i = 0; i < appealChangeLogData.changeLogs.length; i++) {
-    const logDate: Date = new Date(appealChangeLogData.changeLogs[i].createdAt);
-    if (
-      latestAppealUpdateDate &&
-      logDate < latestAppealUpdateDate &&
-      appealDetailsData.appeals[0].latestStatus === "ACCEPTED" &&
-      appealDetailsData.appeals[0].newFileSubmissionId &&
-      appealDetailsData.appeals[0].submission &&
-      appealDetailsData.appeals[0].submission.reports.length > 0
-    ) {
-      score = appealDetailsData.appeals[0].submission.reports[0].grade.score;
-      break;
-    } else if (appealChangeLogData.changeLogs[i].type === "SCORE") {
-      score = appealChangeLogData.changeLogs[i].updatedState.replace(/[^0-9]/g, "");
-      break;
-    }
+  // Get the latest `SCORE` change log
+  const latestScoreChange: ChangeLog | undefined = appealChangeLogData?.changeLogs.find((e) => e.type === "SCORE");
+
+  if (latestScoreChange && !latestAcceptedAppeal) {
+    // latest update was score change
+    score = latestScoreChange.updatedState["score"];
+  } else if (latestAcceptedAppeal && !latestScoreChange) {
+    // latest update was successful appeal with file submission
+    return latestAcceptedAppeal.submission.reports[0]?.grade.score;
+  } else if (!latestAcceptedAppeal && !latestScoreChange) {
+    // original submission score
+    return score;
+  } else {
+    const latestAppealTime: Date = new Date(latestAcceptedAppeal!.updatedAt!);
+    const latestScoreTime: Date = new Date(latestScoreChange!.createdAt);
+    return latestAppealTime > latestScoreTime
+      ? latestAcceptedAppeal!.submission.reports[0].grade.score
+      : latestScoreChange!.updatedState["score"];
   }
   const maxScore = submissionsData?.submissions
-    .filter((e) => !e.isAppeal)[0]
-    .reports.filter((e) => e.grade && e.grade.details)[0].grade.details.accTotal;
+    .filter((e) => !e.isAppeal && e.reports.length > 0)[0]
+    .reports.filter((e) => e.grade)[0].grade.maxTotal;
 
   // Determine whether student got full mark in the latest submission
   const isFullMark = score === maxScore ? true : false;
@@ -525,8 +516,6 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                       userId={userId}
                       assignmentConfigId={assignmentId}
                       comments={comments}
-                      disabled={disabled}
-                      setButtonDisabled={setDisabled}
                       files={acceptedFiles}
                     />
                   </div>
@@ -535,8 +524,6 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                     userId={userId}
                     assignmentConfigId={assignmentId}
                     comments={comments}
-                    disabled={disabled}
-                    setButtonDisabled={setDisabled}
                     files={acceptedFiles}
                   />
                 )}

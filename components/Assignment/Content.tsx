@@ -217,7 +217,7 @@ function GradePanel({
   let appealStatus: AppealStatus | null = null; // Latest status of the submitted appeal (if any)
   if (appealAttempt) {
     appealId = appealAttempt.id;
-    appealStatus = appealAttempt.latestStatus;
+    appealStatus = appealAttempt.status;
   }
   const now = new Date();
 
@@ -245,13 +245,13 @@ function GradePanel({
   let gradeTextColor: string = "";
   let attemptLeftTextColor: string = "";
   switch (appealStatus) {
-    case AppealStatus.Reject:
+    case AppealStatus.REJECTED:
       backgroundColor = "bg-red-50";
       gradeTextColor = "text-red-800";
       attemptLeftTextColor = "text-red-600";
       break;
 
-    case AppealStatus.Pending:
+    case AppealStatus.PENDING:
       backgroundColor = "bg-yellow-50";
       gradeTextColor = "text-yellow-800";
       break;
@@ -278,7 +278,7 @@ function GradePanel({
         </>
       )}
       {/* Only allow students to submit an appeal if not appealed before or latest appeal has been accepted or rejected */}
-      {appealStatus != AppealStatus.Pending && (
+      {appealStatus != AppealStatus.PENDING && (
         <>
           <AppealGradeButton assignmentId={assignmentId} disabled={appealGradeButtonDisabled} />
           <p className={attemptLeftTextCss}>Appeal Attempts Left: {appealAttemptLeft}</p>
@@ -393,51 +393,30 @@ function getScore({ appeals, changeLogs, submissions }: getScoreProps) {
    * If there are NO `SCORE` change log AND `ACCEPTED` appeal >>> use the score of the original submission
    */
 
-  const acceptedAppeals: Appeal[] = appeals.filter((e) => e.status === "ACCEPTED");
-  let acceptedAppealDate: Date | null = null;
-  let acceptedAppealScore: number | null = null;
-
   // Get the latest `ACCEPTED` appeal with a new score generated
-  for (let i = 0; i < acceptedAppeals.length; i++) {
-    if (
-      acceptedAppeals[i].updatedAt &&
-      acceptedAppeals[i].submission &&
-      acceptedAppeals[i].submission.reports.length > 0
-    ) {
-      acceptedAppealDate = new Date(acceptedAppeals[i].updatedAt!);
-      acceptedAppealScore = acceptedAppeals[i].submission.reports[0].grade.score;
-      break;
-    }
-  }
+  const latestAcceptedAppeal: Appeal | undefined = appeals.find(
+    (e) => e.status === "ACCEPTED" && e.newFileSubmissionId,
+  );
 
   // Get the latest `SCORE` change log
-  for (let i = 0; i < changeLogs.length; i++) {
-    const changeLogDate: Date = new Date(changeLogs[i].createdAt);
+  const latestScoreChange: ChangeLog | undefined = changeLogs.find((e) => e.type === "SCORE");
 
-    if (acceptedAppealDate && acceptedAppealDate > changeLogDate) {
-      return acceptedAppealScore;
-    }
-
-    if (changeLogs[i].type === "SCORE") {
-      return parseInt(changeLogs[i].updatedState.replace(/[^0-9]/g, ""));
-    }
-  }
-
-  // If above fails, get the original submission score
-  for (let i = 0; i < submissions.length; i++) {
-    let isNewFileSubmission: boolean = false;
-
-    // Do not pick the submission that is related to the appeal
-    for (let j = 0; j < appeals.length; j++) {
-      if (submissions[i].id === appeals[j].newFileSubmissionId) {
-        isNewFileSubmission = true;
-        break;
-      }
-    }
-
-    if (!isNewFileSubmission && submissions[i].reports.length > 0 && submissions[i].reports[0].grade.score) {
-      return submissions[i].reports[0].grade.score;
-    }
+  if (latestScoreChange && !latestAcceptedAppeal) {
+    // latest update was score change
+    return latestScoreChange.updatedState["score"];
+  } else if (latestAcceptedAppeal && !latestScoreChange) {
+    // latest update was successful appeal with file submission
+    return latestAcceptedAppeal.submission.reports[0]?.grade.score;
+  } else if (!latestAcceptedAppeal && !latestScoreChange) {
+    // original submission score
+    return submissions.find((e) => !e.isAppeal && e.reports.length > 0 && e.reports[0].grade.score)!.reports[0].grade
+      .score;
+  } else {
+    const latestAppealTime: Date = new Date(latestAcceptedAppeal!.updatedAt!);
+    const latestScoreTime: Date = new Date(latestScoreChange!.createdAt);
+    return latestAppealTime > latestScoreTime
+      ? latestAcceptedAppeal!.submission.reports[0].grade.score
+      : latestScoreChange!.updatedState["score"];
   }
 }
 

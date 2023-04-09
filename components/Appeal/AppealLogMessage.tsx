@@ -77,13 +77,13 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
                   ...(logDate.getFullYear() !== now.getFullYear() && { year: "numeric" }),
                 })} at ${logDate.toLocaleTimeString().toLowerCase()}`}
               </span>
-              {log.updatedState === AppealStatus.Accept && (
+              {log.updatedState === AppealStatus.ACCEPTED && (
                 <p className="ml-2 text-sm text-green-600">Your appeal has been accepted</p>
               )}
-              {log.updatedState === AppealStatus.Reject && (
+              {log.updatedState === AppealStatus.REJECTED && (
                 <p className="ml-2 text-sm text-red-600">Your appeal has been rejected</p>
               )}
-              {log.updatedState === AppealStatus.Pending && (
+              {log.updatedState === AppealStatus.PENDING && (
                 <p className="ml-2 text-sm text-yellow-600">Your appeal has been set to pending</p>
               )}
               {log.reason && (

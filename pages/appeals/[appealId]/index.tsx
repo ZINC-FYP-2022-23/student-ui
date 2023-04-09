@@ -228,19 +228,19 @@ interface AppealResultBoxProps {
  */
 function AppealResultBox({ appealResult }: AppealResultBoxProps) {
   switch (appealResult) {
-    case AppealStatus.Accept:
+    case AppealStatus.ACCEPTED:
       return (
         <div className="bg-green-50 py-3 rounded-md">
           <AppealResult appealResult={appealResult} />
         </div>
       );
-    case AppealStatus.Reject:
+    case AppealStatus.REJECTED:
       return (
         <div className="bg-red-50 py-3 rounded-md">
           <AppealResult appealResult={appealResult} />
         </div>
       );
-    case AppealStatus.Pending:
+    case AppealStatus.PENDING:
       return (
         <div className="bg-yellow-50 py-3 rounded-md">
           <AppealResult appealResult={appealResult} />
@@ -447,7 +447,7 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
                 <h1 className="flex-1 font-semibold text-2xl text-center">Grade Appeal</h1>
               </div>
               <div className="w-full mt-3">
-                <AppealResultBox appealResult={appealAttempt[0].latestStatus} />
+                <AppealResultBox appealResult={appealAttempt[0].status} />
               </div>
             </div>
             <div className="p-2 flex-1 overflow-y-auto space-y-2">

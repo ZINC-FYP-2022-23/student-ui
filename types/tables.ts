@@ -11,7 +11,7 @@ export type AppealMessage = {
   appealId: number;
   createdAt: string;
   isRead: boolean;
-  assignment_appeal: Appeal;
+  assignmentAppeal: Appeal;
   user: User;
 };
 
@@ -23,8 +23,8 @@ export type Appeal = {
   updatedAt: string | null;
   userId: number;
   assignmentConfigId: number;
-  assignment_appeal_messages: AppealMessage[];
-  assignment_config: AssignmentConfig;
+  assignmentAppealMessages: AppealMessage[];
+  assignmentConfig: AssignmentConfig;
   submission: Submission;
   user: User;
 };
@@ -74,7 +74,7 @@ export type AssignmentConfig = {
   appealStopAt: Date | null;
   isAppealStudentReplyAllowed: boolean;
   isAppealViewReportAllowed: boolean;
-  assignment_appeals: Appeal[];
+  assignmentAppeals: Appeal[];
 };
 
 export type AssignmentConfigUser = {
@@ -99,15 +99,15 @@ export type ChangeLog = {
   id: number;
   createdAt: string;
   type: string;
-  originalState: string;
-  updatedState: string;
-  initiated_by: number;
+  originalState: { score: number } | { status: string } | { submission: number };
+  updatedState: { score: number } | { status: string } | { submission: number };
+  initiatedBy: number;
   reason: string;
-  appealId: number;
+  appealId: number | null;
   userId: number;
   assignmentConfigId: number;
-  reportId: number;
-  submissionId: number;
+  reportId: number | null;
+  submissionId: number | null;
   user: User;
 };
 export type Course = {

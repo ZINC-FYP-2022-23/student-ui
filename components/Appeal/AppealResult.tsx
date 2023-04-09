@@ -7,7 +7,7 @@ import { AppealStatus } from "../../types/appeal";
  */
 export function AppealResult({ appealResult }: { appealResult: AppealStatus }) {
   switch (appealResult) {
-    case AppealStatus.Accept: {
+    case AppealStatus.ACCEPTED: {
       return (
         <div className="flex flex-col items-center rounded-lg">
           <div className="flex items-center">
@@ -18,7 +18,7 @@ export function AppealResult({ appealResult }: { appealResult: AppealStatus }) {
       );
       break;
     }
-    case AppealStatus.Reject: {
+    case AppealStatus.REJECTED: {
       return (
         <div className="flex flex-col items-center rounded-lg">
           <div className="flex items-center">
@@ -29,7 +29,7 @@ export function AppealResult({ appealResult }: { appealResult: AppealStatus }) {
       );
       break;
     }
-    case AppealStatus.Pending: {
+    case AppealStatus.PENDING: {
       return (
         <div className="flex flex-col items-center rounded-lg">
           <div className="flex items-center">

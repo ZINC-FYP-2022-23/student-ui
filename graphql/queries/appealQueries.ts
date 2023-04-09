@@ -177,7 +177,7 @@ export const GET_IDS_BY_APPEAL_ID = gql`
     appeal(id: $appealId) {
       id
       assignmentConfigId
-      assignment_config {
+      assignmentConfig {
         id
         assignment {
           id
@@ -213,7 +213,7 @@ export const GET_APPEAL_VALIDATION_DATA = gql`
       appealStartAt
       appealStopAt
       isAppealAllowed
-      assignment_appeals_aggregate(
+      assignmentAppeals_aggregate(
         where: { assignmentConfigId: { _eq: $assignmentConfigId }, userId: { _eq: $userId } }
       ) {
         aggregate {
@@ -229,7 +229,7 @@ export const GET_APPEAL_MESSAGE_VALIDATION_DATA = gql`
   query getAppealMessageValidationData($appealId: bigint!, $senderId: bigint!) {
     appeal(id: $appealId) {
       createdAt
-      assignment_config {
+      assignmentConfig {
         appealStartAt
         isAppealStudentReplyAllowed
         isAppealAllowed

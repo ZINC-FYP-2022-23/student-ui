@@ -10,16 +10,16 @@ function transformAppealStatus(originalStatus) {
   let transformedStatus: AppealStatus;
   switch (originalStatus) {
     case "ACCEPTED":
-      transformedStatus = AppealStatus.Accept;
+      transformedStatus = AppealStatus.ACCEPTED;
       break;
     case "PENDING":
-      transformedStatus = AppealStatus.Pending;
+      transformedStatus = AppealStatus.PENDING;
       break;
     case "REJECTED":
-      transformedStatus = AppealStatus.Reject;
+      transformedStatus = AppealStatus.REJECTED;
       break;
     default:
-      transformedStatus = AppealStatus.Pending;
+      transformedStatus = AppealStatus.PENDING;
   }
 
   return transformedStatus;
@@ -46,7 +46,7 @@ export function transformToAppealAttempt({ appealsDetailsData }: transformToAppe
       assignmentConfigId: appealsDetailsData.appeal.assignmentConfigId,
       userId: appealsDetailsData.appeal.userId,
       createdAt: appealsDetailsData.appeal.createdAt,
-      latestStatus: latestStatus,
+      status: latestStatus,
       updatedAt: appealsDetailsData.appeal.updatedAt,
     });
   }
@@ -62,7 +62,7 @@ export function transformToAppealAttempt({ appealsDetailsData }: transformToAppe
         assignmentConfigId: appeal.assignmentConfigId,
         userId: appeal.userId,
         createdAt: appeal.createdAt,
-        latestStatus: latestStatus,
+        status: latestStatus,
         updatedAt: appeal.updatedAt,
       });
     });
@@ -120,8 +120,8 @@ function sort({ submissions, messages, appealLog }: sortProps) {
 }
 
 interface transformStateType {
-  type: ChangeLogTypes | "APPEAL_SUBMISSION"; // Type of the log
-  state: string; // JSON string to be transformed
+  type: ChangeLogTypes; // Type of the log
+  state: object; // JSON string to be transformed
 }
 
 /**
@@ -130,24 +130,18 @@ interface transformStateType {
  */
 function transformState({ type, state }: transformStateType) {
   if (type === ChangeLogTypes.APPEAL_STATUS) {
-    if (state === "[{'status':ACCEPTED}]") {
-      return AppealStatus.Accept;
-    } else if (state === "[{'status':REJECTED}]") {
-      return AppealStatus.Reject;
-    } else if (state === "[{'status':PENDING}]") {
-      return AppealStatus.Pending;
-    } else {
-      return "Error: Appeal Status is unknown: " + state;
+    const status = state["status"];
+    if (status === "ACCEPTED") {
+      return AppealStatus.ACCEPTED;
+    } else if (status === "REJECTED") {
+      return AppealStatus.REJECTED;
+    } else if (status === "PENDING") {
+      return AppealStatus.PENDING;
     }
   }
 
   if (type === ChangeLogTypes.SCORE) {
-    let score = state.match(/(\d+)/);
-    if (score && score[0]) {
-      return score[0].toString();
-    } else {
-      return "Error: Score change is unknown: " + state;
-    }
+    return state["score"].toString();
   }
 
   return state;
@@ -242,6 +236,8 @@ export function mergeDataToActivityLogList({
       initiatedBy: log.initiatedBy,
       reason: log.reason,
       appealId: log.appealId,
+      assignmentConfigId: log.assignmentConfigId,
+      userId: log.userId,
     });
   });
 
