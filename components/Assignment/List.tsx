@@ -23,7 +23,7 @@ function AssignmentListItem({ assignmentConfig }) {
     <Link href="/assignments/[assignmentId]" as={`/assignments/${id}`}>
       <a
         className={`space-y-1 px-6 py-3 block ${
-          assignmentId == id ? "bg-blue-100 border-l-4 border-cse-300" : "bg-white"
+          assignmentId === id ? "bg-blue-100 border-l-4 border-cse-300" : "bg-white"
         }`}
       >
         <div className="flex justify-between">

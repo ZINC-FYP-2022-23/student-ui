@@ -282,7 +282,7 @@ export function ValgrindErrorViewer({ errors }) {
                 </thead>
                 <tbody>
                   {errors[index]["what"][0]["stack"].map((issue, j) => (
-                    <tr className={`${j % 2 == 0 ? "bg-white" : "bg-gray-50"}`}>
+                    <tr className={`${j % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
                       <td className="px-6 py-4 flex flex-col whitespace-no-wrap text-sm leading-5 font-medium text-gray-900">
                         {issue.fn}
                         <span className="text-gray-500 font-light font-mono">{issue.ip}</span>

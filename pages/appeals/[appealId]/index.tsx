@@ -409,7 +409,7 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
   let appealAttempt: AppealAttempt[] = transformToAppealAttempt({ appealsDetailsData });
 
   // Display Error if the student has no access to the appeal
-  if (appealsDetailsData.appeal.userId != userId) {
+  if (appealsDetailsData.appeal.userId !== userId) {
     const errorMessage = "Access Denied. You don't have permission to access this appeal.";
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   }
@@ -424,7 +424,7 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
   // Only allow reply if config set as true AND it's the latest appeal
   let isAppealStudentReplyAllowed: boolean = false;
   if (
-    appealsData!.appeals[0].createdAt == appealAttempt[0].createdAt &&
+    appealsData!.appeals[0].createdAt === appealAttempt[0].createdAt &&
     appealConfigData!.assignmentConfig.isAppealStudentReplyAllowed
   ) {
     isAppealStudentReplyAllowed = true;
@@ -533,7 +533,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   const newSubmissionId: number = idData.appeal.newFileSubmissionId || -1;
   let oldSubmissionId: number = -1;
   for (let i = 0; i < submissionsData.submissions.length; i++) {
-    if (submissionsData.submissions[i].id != newSubmissionId) {
+    if (submissionsData.submissions[i].id !== newSubmissionId) {
       oldSubmissionId = submissionsData.submissions[i].id;
       break;
     }

@@ -32,6 +32,7 @@ export type ChangeLog = {
   id: number;
   createdAt: string;
   type: ChangeLogTypes;
+  // TODO: see if this type implementation for state is correct
   originalState: { score: number } | { status: string } | { submission: number };
   updatedState: { score: number } | { status: string } | { submission: number };
   initiatedBy: number; // User ID

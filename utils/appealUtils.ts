@@ -223,8 +223,8 @@ export function mergeDataToActivityLogList({
   appealChangeLogData.changeLogs.forEach((log) => {
     // Assign a log type for each change log
     let logType: ChangeLogTypes;
-    if (log.type == "APPEAL_STATUS") logType = ChangeLogTypes.APPEAL_STATUS;
-    else if (log.type == "SCORE") logType = ChangeLogTypes.SCORE;
+    if (log.type === "APPEAL_STATUS") logType = ChangeLogTypes.APPEAL_STATUS;
+    else if (log.type === "SCORE") logType = ChangeLogTypes.SCORE;
     else logType = ChangeLogTypes.SUBMISSION;
 
     changeLogs.push({

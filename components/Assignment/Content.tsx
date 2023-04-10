@@ -278,7 +278,7 @@ function GradePanel({
         </>
       )}
       {/* Only allow students to submit an appeal if not appealed before or latest appeal has been accepted or rejected */}
-      {appealStatus != AppealStatus.PENDING && (
+      {appealStatus !== AppealStatus.PENDING && (
         <>
           <AppealGradeButton assignmentId={assignmentId} disabled={appealGradeButtonDisabled} />
           <p className={attemptLeftTextCss}>Appeal Attempts Left: {appealAttemptLeft}</p>
@@ -569,7 +569,7 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
                 submissionClosed={content.submissionWindowPassed}
                 isOpen={content.openForSubmission}
               />
-              {score != null && score != undefined && maxScore && (
+              {score && maxScore && (
                 <GradePanel
                   content={content}
                   assignmentId={content.id}

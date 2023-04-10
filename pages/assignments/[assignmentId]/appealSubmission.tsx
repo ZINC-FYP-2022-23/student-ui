@@ -483,7 +483,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                     </div>
                   </div>
                 </div>
-                {acceptedFiles.length != 0 && (
+                {acceptedFiles.length !== 0 && (
                   <div className="mt-4">
                     <h4 className="mb-2 font-semibold">Uploaded Files:</h4>
                     {acceptedFiles.map((file) => (
