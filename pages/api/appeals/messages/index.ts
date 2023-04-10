@@ -30,7 +30,7 @@ async function handlePostAppealMessage(req: NextApiRequest, res: NextApiResponse
     console.log(appealMessageValidationData);
 
     // Assignment config does not allow student to file appeal
-    if (!appealMessageValidationData.appeal.assignment_config.isAppealAllowed) {
+    if (!appealMessageValidationData.appeal.assignmentConfig.isAppealAllowed) {
       return res.status(403).json({
         status: "error",
         error: "This assignment does not allow student grade appeals.",
@@ -40,7 +40,7 @@ async function handlePostAppealMessage(req: NextApiRequest, res: NextApiResponse
     // Assignment config does not allow student to reply to TAs in appeal attempts
     if (
       !appealMessageValidationData.user.isAdmin &&
-      !appealMessageValidationData.appeal.assignment_config.isAppealStudentReplyAllowed
+      !appealMessageValidationData.appeal.assignmentConfig.isAppealStudentReplyAllowed
     ) {
       return res.status(403).json({
         status: "error",
@@ -49,14 +49,14 @@ async function handlePostAppealMessage(req: NextApiRequest, res: NextApiResponse
     }
 
     // Appeal message cannot be sent before appeal start
-    if (!appealMessageValidationData.appeal.assignment_config.appealStartAt) {
+    if (!appealMessageValidationData.appeal.assignmentConfig.appealStartAt) {
       return res.status(403).json({
         status: "error",
         error: "Appeal period not configured. Please consult the course coordinator or TAs.",
       });
     }
     const appealStartAt: Date = utcToZonedTime(
-      appealMessageValidationData.appeal.assignment_config.appealStartAt,
+      appealMessageValidationData.appeal.assignmentConfig.appealStartAt,
       "Asia/Hong_Kong",
     );
     if (now.getTime() < appealStartAt.getTime()) {

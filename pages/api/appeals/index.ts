@@ -12,7 +12,7 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
   const now: Date = new Date();
   body.createdAt = zonedTimeToUtc(now, "Asia/Hong_Kong");
   body.updatedAt = zonedTimeToUtc(now, "Asia/Hong_Kong");
-  body.assignment_appeal_messages.data[0].createdAt = zonedTimeToUtc(now, "Asia/Hong_Kong");
+  body.assignmentAppealMessages.data[0].createdAt = zonedTimeToUtc(now, "Asia/Hong_Kong");
 
   try {
     // Search for previous appeal attempts and assignment config
@@ -44,7 +44,7 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
     if (appealValidationData.assignmentConfig.appealLimits !== null) {
       const appealQuota =
         appealValidationData.assignmentConfig.appealLimits -
-        appealValidationData.assignmentConfig.assignment_appeals_aggregate.aggregate.count;
+        appealValidationData.assignmentConfig.assignmentAppeals_aggregate.aggregate.count;
       if (appealQuota === 0) {
         return res.status(403).json({
           status: "error",

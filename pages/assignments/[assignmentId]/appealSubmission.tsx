@@ -125,7 +125,7 @@ function AppealButton({ userId, assignmentConfigId, comments, files }: AppealBut
                   assignmentConfigId,
                   userId,
                   newFileSubmissionId,
-                  assignment_appeal_messages: {
+                  assignmentAppealMessages: {
                     data: [
                       {
                         message: comments,
