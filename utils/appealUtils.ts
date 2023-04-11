@@ -1,4 +1,12 @@
-import { AppealAttempt, AppealLog, AppealStatus, ChangeLog, ChangeLogTypes, DisplayMessageType } from "@/types/appeal";
+import {
+  AppealAttempt,
+  AppealLog,
+  AppealStatus,
+  ChangeLog,
+  ChangeLogState,
+  ChangeLogTypes,
+  DisplayMessageType,
+} from "@/types/appeal";
 import { Submission as SubmissionType } from "types";
 
 /**
@@ -121,10 +129,7 @@ function sort({ submissions, messages, appealLog }: sortProps) {
 
 interface transformStateType {
   type: ChangeLogTypes; // Type of the log
-  state:
-    | { type: "score"; score: number }
-    | { type: "status"; status: string }
-    | { type: "submission"; submission: number };
+  state: ChangeLogState;
 }
 
 /**

@@ -32,14 +32,8 @@ export type ChangeLog = {
   id: number;
   createdAt: string;
   type: ChangeLogTypes;
-  originalState:
-    | { type: "score"; score: number }
-    | { type: "status"; status: string }
-    | { type: "submission"; submission: number };
-  updatedState:
-    | { type: "score"; score: number }
-    | { type: "status"; status: string }
-    | { type: "submission"; submission: number };
+  originalState: ChangeLogState;
+  updatedState: ChangeLogState;
   initiatedBy: number; // User ID
   reason: string;
   appealId?: number;
@@ -53,20 +47,19 @@ export enum ChangeLogTypes {
   SUBMISSION = "SUBMISSION",
 }
 
+export type ChangeLogState =
+  | { type: "score"; score: number }
+  | { type: "status"; status: string }
+  | { type: "submission"; submission: number };
+
 // Unique types in student-ui
 export type AppealLog = {
   id: number;
   appealId?: number;
   type: ChangeLogTypes | "APPEAL_SUBMISSION";
   date: string;
-  originalState?:
-    | { type: "score"; score: number }
-    | { type: "status"; status: string }
-    | { type: "submission"; submission: number };
-  updatedState?:
-    | { type: "score"; score: number }
-    | { type: "status"; status: string }
-    | { type: "submission"; submission: number };
+  originalState?: ChangeLogState;
+  updatedState?: ChangeLogState;
   reason?: string;
 };
 

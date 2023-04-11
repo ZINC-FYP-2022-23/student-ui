@@ -2,6 +2,7 @@
  * @file Types for the database tables.
  */
 
+import { ChangeLogState } from "./appeal";
 import { GraderReport, ScoreReports } from "./report";
 
 export type AppealMessage = {
@@ -99,14 +100,8 @@ export type ChangeLog = {
   id: number;
   createdAt: string;
   type: string;
-  originalState:
-    | { type: "score"; score: number }
-    | { type: "status"; status: string }
-    | { type: "submission"; submission: number };
-  updatedState:
-    | { type: "score"; score: number }
-    | { type: "status"; status: string }
-    | { type: "submission"; submission: number };
+  originalState: ChangeLogState;
+  updatedState: ChangeLogState;
   initiatedBy: number;
   reason: string;
   appealId: number | null;
