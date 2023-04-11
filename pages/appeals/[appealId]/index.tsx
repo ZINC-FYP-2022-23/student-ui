@@ -190,6 +190,10 @@ function CodeComparisonTab({ diffData }: CodeComparisonTabProps) {
   const { classes } = useStyles();
   const { diff, error, status } = diffData;
 
+  if (status === -1) {
+    return <p className="mt-8 text-center text-gray-600">This appeal attempt does not include a file submission.</p>;
+  }
+
   if (status !== 200) {
     return (
       <div className="mt-8 flex flex-col items-center space-y-5 text-red-500">
@@ -534,18 +538,22 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
   const oldSubmissionId: number = submissionsData.submissions.filter((e) => !e.isAppeal)[0].id;
 
   let diffSubmissionsData: DiffSubmissionsData;
-  try {
-    const response = await fetch(
-      `http://${process.env.WEBHOOK_ADDR}/diffSubmissions?oldId=${oldSubmissionId}&newId=${newSubmissionId}`,
-      {
-        method: "GET",
-      },
-    );
-    const { status } = response;
-    const { diff, error } = await response.json();
-    diffSubmissionsData = { diff, error, status };
-  } catch (error) {
-    diffSubmissionsData = { diff: "", status: 500, error: "An unknown error has occurred." };
+  if (newSubmissionId === -1) {
+    diffSubmissionsData = { diff: "", status: -1, error: null };
+  } else {
+    try {
+      const response = await fetch(
+        `http://${process.env.WEBHOOK_ADDR}/diffSubmissions?oldId=${oldSubmissionId}&newId=${newSubmissionId}`,
+        {
+          method: "GET",
+        },
+      );
+      const { status } = response;
+      const { diff, error } = await response.json();
+      diffSubmissionsData = { diff, error, status };
+    } catch (error) {
+      diffSubmissionsData = { diff: "", status: 500, error: "An unknown error has occurred." };
+    }
   }
 
   return {
