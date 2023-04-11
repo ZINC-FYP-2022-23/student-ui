@@ -156,6 +156,7 @@ describe("Grade Appeal: Utils", () => {
       ];
 
       const appealChangeLogData = {
+        // TODO: fix originalState and updatedState tests cases
         changeLogs: [
           {
             assignmentConfigId: 1,

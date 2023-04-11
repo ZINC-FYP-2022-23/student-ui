@@ -32,9 +32,14 @@ export type ChangeLog = {
   id: number;
   createdAt: string;
   type: ChangeLogTypes;
-  // TODO: see if this type implementation for state is correct
-  originalState: { score: number } | { status: string } | { submission: number };
-  updatedState: { score: number } | { status: string } | { submission: number };
+  originalState:
+    | { type: "score"; score: number }
+    | { type: "status"; status: string }
+    | { type: "submission"; submission: number };
+  updatedState:
+    | { type: "score"; score: number }
+    | { type: "status"; status: string }
+    | { type: "submission"; submission: number };
   initiatedBy: number; // User ID
   reason: string;
   appealId?: number;
@@ -54,8 +59,14 @@ export type AppealLog = {
   appealId?: number;
   type: ChangeLogTypes | "APPEAL_SUBMISSION";
   date: string;
-  originalState?: string;
-  updatedState?: string;
+  originalState?:
+    | { type: "score"; score: number }
+    | { type: "status"; status: string }
+    | { type: "submission"; submission: number };
+  updatedState?:
+    | { type: "score"; score: number }
+    | { type: "status"; status: string }
+    | { type: "submission"; submission: number };
   reason?: string;
 };
 

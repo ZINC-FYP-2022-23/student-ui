@@ -99,8 +99,14 @@ export type ChangeLog = {
   id: number;
   createdAt: string;
   type: string;
-  originalState: { score: number } | { status: string } | { submission: number };
-  updatedState: { score: number } | { status: string } | { submission: number };
+  originalState:
+    | { type: "score"; score: number }
+    | { type: "status"; status: string }
+    | { type: "submission"; submission: number };
+  updatedState:
+    | { type: "score"; score: number }
+    | { type: "status"; status: string }
+    | { type: "submission"; submission: number };
   initiatedBy: number;
   reason: string;
   appealId: number | null;

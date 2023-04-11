@@ -373,9 +373,9 @@ function DisplayError({ content, errorMessage }: DisplayErrorProps) {
 }
 
 interface getScoreProps {
-  appeals: Appeal[];
-  changeLogs: ChangeLog[];
-  submissions: SubmissionType[];
+  appeals: Appeal[] | undefined;
+  changeLogs: ChangeLog[] | undefined;
+  submissions: SubmissionType[] | undefined;
 }
 
 /**
@@ -394,29 +394,29 @@ function getScore({ appeals, changeLogs, submissions }: getScoreProps) {
    */
 
   // Get the latest `ACCEPTED` appeal with a new score generated
-  const latestAcceptedAppeal: Appeal | undefined = appeals.find(
+  const latestAcceptedAppeal: Appeal | undefined = appeals?.find(
     (e) => e.status === "ACCEPTED" && e.newFileSubmissionId,
   );
 
   // Get the latest `SCORE` change log
-  const latestScoreChange: ChangeLog | undefined = changeLogs.find((e) => e.type === "SCORE");
+  const latestScoreChange: ChangeLog | undefined = changeLogs?.find((e) => e.type === "SCORE");
 
-  if (latestScoreChange && !latestAcceptedAppeal) {
+  if (latestScoreChange && latestScoreChange.updatedState.type === "score" && !latestAcceptedAppeal) {
     // latest update was score change
-    return latestScoreChange.updatedState["score"];
+    return latestScoreChange.updatedState.score;
   } else if (latestAcceptedAppeal && !latestScoreChange) {
     // latest update was successful appeal with file submission
     return latestAcceptedAppeal.submission.reports[0]?.grade.score;
   } else if (!latestAcceptedAppeal && !latestScoreChange) {
     // original submission score
-    return submissions.find((e) => !e.isAppeal && e.reports.length > 0 && e.reports[0].grade.score)!.reports[0].grade
+    return submissions?.find((e) => !e.isAppeal && e.reports.length > 0 && e.reports[0].grade.score)!.reports[0].grade
       .score;
   } else {
     const latestAppealTime: Date = new Date(latestAcceptedAppeal!.updatedAt!);
     const latestScoreTime: Date = new Date(latestScoreChange!.createdAt);
     return latestAppealTime > latestScoreTime
       ? latestAcceptedAppeal!.submission.reports[0].grade.score
-      : latestScoreChange!.updatedState["score"];
+      : latestScoreChange!.updatedState.type === "score" && latestScoreChange!.updatedState.score;
   }
 }
 
@@ -498,13 +498,14 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
 
   // Get the original score
   const score = getScore({
-    appeals: appealsDetailsData!.appeals,
-    changeLogs: appealChangeLogData!.changeLogs,
-    submissions: submissionData!.submissions,
+    appeals: appealsDetailsData?.appeals,
+    changeLogs: appealChangeLogData?.changeLogs,
+    submissions: submissionData?.submissions,
   });
 
-  let maxScore: number = submissionData!.submissions.filter((e) => !e.isAppeal && e.reports.length > 0)[0].reports[0]
-    .grade.maxTotal;
+  let maxScore = submissionData?.submissions
+    .filter((e) => !e.isAppeal && e.reports.length > 0)[0]
+    .reports.filter((e) => e.grade)[0].grade.maxTotal;
 
   return (
     <div className="flex-1 overflow-y-auto">

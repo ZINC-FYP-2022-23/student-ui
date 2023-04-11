@@ -121,7 +121,10 @@ function sort({ submissions, messages, appealLog }: sortProps) {
 
 interface transformStateType {
   type: ChangeLogTypes; // Type of the log
-  state: object; // JSON string to be transformed
+  state:
+    | { type: "score"; score: number }
+    | { type: "status"; status: string }
+    | { type: "submission"; submission: number };
 }
 
 /**
@@ -129,8 +132,8 @@ interface transformStateType {
  * @returns {AppealStatus | string} - The new transformed state
  */
 function transformState({ type, state }: transformStateType) {
-  if (type === ChangeLogTypes.APPEAL_STATUS) {
-    const status = state["status"];
+  if (type === ChangeLogTypes.APPEAL_STATUS && state.type === "status") {
+    const status = state.status;
     if (status === "ACCEPTED") {
       return AppealStatus.ACCEPTED;
     } else if (status === "REJECTED") {
@@ -140,8 +143,8 @@ function transformState({ type, state }: transformStateType) {
     }
   }
 
-  if (type === ChangeLogTypes.SCORE) {
-    return state["score"].toString();
+  if (type === ChangeLogTypes.SCORE && state.type === "score") {
+    return state.score.toString();
   }
 
   return state;
@@ -170,16 +173,13 @@ function transformToAppealLog({ appeals, changeLog }: transformToAppealLogProps)
   });
 
   changeLog.forEach((log) => {
-    let originalState: AppealStatus | string = transformState({ type: log.type, state: log.originalState });
-    let updatedStatus: AppealStatus | string = transformState({ type: log.type, state: log.updatedState });
-
     appealLog.push({
       id: log.id,
       appealId: log.appealId,
       type: log.type,
       date: log.createdAt,
-      originalState: originalState,
-      updatedState: updatedStatus,
+      originalState: log.originalState,
+      updatedState: log.updatedState,
       reason: log.reason,
     });
   });

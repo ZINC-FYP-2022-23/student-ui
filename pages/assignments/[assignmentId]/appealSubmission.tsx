@@ -401,9 +401,9 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
   // Get the latest `SCORE` change log
   const latestScoreChange: ChangeLog | undefined = appealChangeLogData?.changeLogs.find((e) => e.type === "SCORE");
 
-  if (latestScoreChange && !latestAcceptedAppeal) {
+  if (latestScoreChange && latestScoreChange.updatedState.type === "score" && !latestAcceptedAppeal) {
     // latest update was score change
-    score = latestScoreChange.updatedState["score"];
+    score = latestScoreChange.updatedState.score;
   } else if (latestAcceptedAppeal && !latestScoreChange) {
     // latest update was successful appeal with file submission
     return latestAcceptedAppeal.submission.reports[0]?.grade.score;
@@ -415,7 +415,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     const latestScoreTime: Date = new Date(latestScoreChange!.createdAt);
     return latestAppealTime > latestScoreTime
       ? latestAcceptedAppeal!.submission.reports[0].grade.score
-      : latestScoreChange!.updatedState["score"];
+      : latestScoreChange!.updatedState.type === "score" && latestScoreChange!.updatedState.score;
   }
   const maxScore = submissionsData?.submissions
     .filter((e) => !e.isAppeal && e.reports.length > 0)[0]
@@ -487,6 +487,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                   <div className="mt-4">
                     <h4 className="mb-2 font-semibold">Uploaded Files:</h4>
                     {acceptedFiles.map((file) => (
+                      // TODO: add download button for each file
                       <li key={file.name} className="ml-4">
                         {file.name} - {file.size} bytes
                       </li>
