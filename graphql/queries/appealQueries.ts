@@ -163,6 +163,7 @@ export const GET_SUBMISSIONS_BY_ASSIGNMENT_AND_USER_ID = gql`
       order_by: { created_at: desc }
     ) {
       id
+      isAppeal
       assignment_config_id
       reports(order_by: { createdAt: desc }, limit: 1) {
         id

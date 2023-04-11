@@ -529,15 +529,9 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query }) => 
     variables: { assignmentConfigId: idData.appeal.assignmentConfigId, userId },
   });
 
-  // TODO(BRYAN): Obtain the submission IDs from the backend
+  // Obtain the submission IDs from the backend
   const newSubmissionId: number = idData.appeal.newFileSubmissionId || -1;
-  let oldSubmissionId: number = -1;
-  for (let i = 0; i < submissionsData.submissions.length; i++) {
-    if (submissionsData.submissions[i].id !== newSubmissionId) {
-      oldSubmissionId = submissionsData.submissions[i].id;
-      break;
-    }
-  }
+  const oldSubmissionId: number = submissionsData.submissions.filter((e) => !e.isAppeal)[0].id;
 
   let diffSubmissionsData: DiffSubmissionsData;
   try {
