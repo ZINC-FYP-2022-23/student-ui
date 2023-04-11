@@ -61,7 +61,7 @@ interface AppealButtonProps {
  * Returns a appeal submission button
  */
 function AppealButton({ userId, assignmentConfigId, comments, files }: AppealButtonProps) {
-  const [buttonDisabled, setButtonDisabled] = useState<boolean>(true);
+  const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
   const { submitFile } = useZinc();
   const dispatch = useLayoutDispatch();
   const router = useRouter();
@@ -97,14 +97,14 @@ function AppealButton({ userId, assignmentConfigId, comments, files }: AppealBut
               .then(async ({ status, id }: any) => {
                 if (status === "success") {
                   newFileSubmissionId = id;
-                  dispatch({
-                    type: "showNotification",
-                    payload: {
-                      title: "Upload success",
-                      message: "Submission files for appeal uploaded.",
-                      success: true,
-                    },
-                  });
+                  // dispatch({
+                  //   type: "showNotification",
+                  //   payload: {
+                  //     title: "Upload success",
+                  //     message: "Submission files for appeal uploaded.",
+                  //     success: true,
+                  //   },
+                  // });
                 }
               })
               .catch((error) => {
