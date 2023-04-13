@@ -247,7 +247,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
         });
       }
     },
-    [assignmentId],
+    [dispatch],
   );
 
   const { acceptedFiles, getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -360,7 +360,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
         score = latestAppeal.submission.reports[0].grade.score;
         break;
       } else if (changeLog.type === "SCORE") {
-        score = changeLog.updatedState.replace(/[^0-9]/g, "");
+        score = changeLog.updatedState["score"];
         break;
       }
     }

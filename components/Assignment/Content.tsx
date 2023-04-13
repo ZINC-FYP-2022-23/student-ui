@@ -580,7 +580,7 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
           {message &&
             message.map((log, index) => {
               if (log._type === "appealLog") {
-                return <AppealLogMessage key={index} log={log} showButton={true} />;
+                return <AppealLogMessage key={index} log={log} showButton showReason={false} />;
               } else if (log._type === "submission") {
                 return <Submission key={index} submission={log} />;
               }
