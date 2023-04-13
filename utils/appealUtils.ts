@@ -7,12 +7,22 @@ import {
   ChangeLogTypes,
   DisplayMessageType,
 } from "@/types/appeal";
-import { Submission as SubmissionType } from "types";
+import { Submission as SubmissionType } from "@/types/tables";
+
+/**
+ * Compute the maximum score of the assignment from the submissions.
+ */
+export function getMaxScore(submissions: SubmissionType[] | undefined): number | undefined {
+  const nonAppealSubmission = submissions?.find((s) => !s.isAppeal && s.reports.length > 0);
+  if (nonAppealSubmission) {
+    return nonAppealSubmission.reports.find((r) => r.grade)?.grade.maxTotal;
+  }
+  return undefined;
+}
 
 /**
  * Transform the raw data appeal status into type `AppealStatus`
- * @param originalStatus - The status to be transformed
- * @returns {AppealStatus}
+ * @param originalStatus The status to be transformed
  */
 function transformAppealStatus(originalStatus) {
   let transformedStatus: AppealStatus;
@@ -33,15 +43,11 @@ function transformAppealStatus(originalStatus) {
   return transformedStatus;
 }
 
-interface transformToAppealAttemptProps {
-  appealsDetailsData; // Raw Data of a list of appeal attempts
-}
-
 /**
  * Transform raw data into a list of `AppealAttempt`
- * @returns {AppealAttempt[]} - A list of `AppealAttempt`s
+ * @returns A list of `AppealAttempt`s
  */
-export function transformToAppealAttempt({ appealsDetailsData }: transformToAppealAttemptProps) {
+export function transformToAppealAttempt({ appealsDetailsData }) {
   let appealAttempts: AppealAttempt[] = [];
 
   // Case: Only 1 appeal attempt
@@ -162,7 +168,7 @@ interface transformToAppealLogProps {
 
 /**
  * Transforms and merges a list of `AppealAttempt` and `ChangeLog` into one list of `AppealLog`
- * @returns {AppealLog[]} - List of transformed and merged appeal logs, ordered from newest to oldest
+ * @returns List of transformed and merged appeal logs, ordered from newest to oldest
  */
 function transformToAppealLog({ appeals, changeLog }: transformToAppealLogProps): AppealLog[] {
   let appealLog: AppealLog[] = [];
@@ -211,11 +217,7 @@ interface mergeDataToActivityLogListProps {
 
 /**
  * Merges appeal
- * @returns {(
- * | (SubmissionType & { _type: "submission" }
- * | (DisplayMessageType & { _type: "appealMessage" })
- * | (AppealLog & { _type: "appealLog" })
- * )[]} - List of transformed and merged appeal logs, ordered from newest to oldest
+ * @returns List of transformed and merged appeal logs, ordered from newest to oldest
  */
 export function mergeDataToActivityLogList({
   appealAttempt,

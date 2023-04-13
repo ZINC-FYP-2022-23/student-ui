@@ -4,8 +4,8 @@ import {
   GET_APPEAL_CONFIG,
 } from "@/graphql/queries/appealQueries";
 import { AppealAttempt, AppealLog, AppealStatus, DisplayMessageType } from "@/types/appeal";
-import { AssignmentConfig, Submission as SubmissionType, Appeal, ChangeLog } from "@/types/tables";
-import { mergeDataToActivityLogList, transformToAppealAttempt } from "@/utils/appealUtils";
+import { Appeal, AssignmentConfig, ChangeLog, Submission as SubmissionType } from "@/types/tables";
+import { getMaxScore, mergeDataToActivityLogList, transformToAppealAttempt } from "@/utils/appealUtils";
 import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "@mantine/core";
@@ -100,7 +100,7 @@ function AssignmentSubmission({ submissionClosed, configId, isOpen }) {
           });
       }
     },
-    [configId],
+    [dispatch, submitFile],
   );
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -372,52 +372,55 @@ function DisplayError({ content, errorMessage }: DisplayErrorProps) {
   );
 }
 
-interface getScoreProps {
-  appeals: Appeal[] | undefined;
-  changeLogs: ChangeLog[] | undefined;
-  submissions: SubmissionType[] | undefined;
-}
-
 /**
  * Gets the latest score based on the following logic:
- * @returns {number}
+ * - If there are no submissions, return `null`.
+ * - If the `updatedAt` of the latest `ACCEPTED` appeal later than the date of any `SCORE` change:
+ *   - If `newFileSubmission` is available, use the score of the new file submission.
+ *   - If `newFileSubmission` is NOT available:
+ *     - If there is a `SCORE` change log, use the score of latest `SCORE` change.
+ *     - If there is NO `SCORE` change log, use the score of the original submission.
+ * - If there is the date of the latest `SCORE` change than is later than the `updatedAt` of the latest `ACCEPTED` appeal, use the score of latest `SCORE` change
+ * - If there are NO `SCORE` change log AND `ACCEPTED` appeal, use the score of the original submission
  */
-function getScore({ appeals, changeLogs, submissions }: getScoreProps) {
-  /* *** Logic of how to get the score: ***
-   * If the `updatedAt` of the latest `ACCEPTED` appeal later than the date of any `SCORE` change:
-   *    If `newFileSubmission` is available, >>>  use the score of the `newFileSubmission`.
-   *    If `newFileSubmission` is NOT available:
-   *        If there is a `SCORE` change log >>> use the score of latest `SCORE` change.
-   *        If there is NO `SCORE` change log >>> use the score of the original submission.
-   * If there is the date of the latest `SCORE` change than is later than the `updatedAt` of the latest `ACCEPTED` appeal >>> use the score of latest `SCORE` change
-   * If there are NO `SCORE` change log AND `ACCEPTED` appeal >>> use the score of the original submission
-   */
+function getScore(appeals: Appeal[], changeLogs: ChangeLog[], submissions: SubmissionType[]) {
+  const acceptedAppeals: Appeal[] = appeals.filter((e) => e.status === "ACCEPTED");
+  let latestAcceptedAppealUpdateDate: Date | null = null;
+  let latestAcceptedAppealScore: number | null = null;
 
   // Get the latest `ACCEPTED` appeal with a new score generated
-  const latestAcceptedAppeal: Appeal | undefined = appeals?.find(
-    (e) => e.status === "ACCEPTED" && e.newFileSubmissionId,
-  );
+  for (const acceptedAppeal of acceptedAppeals) {
+    if (acceptedAppeal.updatedAt && acceptedAppeal.submission && acceptedAppeal.submission.reports.length > 0) {
+      latestAcceptedAppealUpdateDate = new Date(acceptedAppeal.updatedAt);
+      latestAcceptedAppealScore = acceptedAppeal.submission.reports[0].grade.score;
+      break;
+    }
+  }
 
   // Get the latest `SCORE` change log
-  const latestScoreChange: ChangeLog | undefined = changeLogs?.find((e) => e.type === "SCORE");
+  for (const changeLog of changeLogs) {
+    const changeLogDate: Date = new Date(changeLog.createdAt);
 
-  if (latestScoreChange && latestScoreChange.updatedState.type === "score" && !latestAcceptedAppeal) {
-    // latest update was score change
-    return latestScoreChange.updatedState.score;
-  } else if (latestAcceptedAppeal && !latestScoreChange) {
-    // latest update was successful appeal with file submission
-    return latestAcceptedAppeal.submission.reports[0]?.grade.score;
-  } else if (!latestAcceptedAppeal && !latestScoreChange) {
-    // original submission score
-    return submissions?.find((e) => !e.isAppeal && e.reports.length > 0 && e.reports[0].grade.score)!.reports[0].grade
-      .score;
-  } else {
-    const latestAppealTime: Date = new Date(latestAcceptedAppeal!.updatedAt!);
-    const latestScoreTime: Date = new Date(latestScoreChange!.createdAt);
-    return latestAppealTime > latestScoreTime
-      ? latestAcceptedAppeal!.submission.reports[0].grade.score
-      : latestScoreChange!.updatedState.type === "score" && latestScoreChange!.updatedState.score;
+    if (latestAcceptedAppealUpdateDate && latestAcceptedAppealUpdateDate > changeLogDate) {
+      return latestAcceptedAppealScore;
+    }
+
+    if (changeLog.type === "SCORE") {
+      return changeLog.updatedState["score"];
+    }
   }
+
+  // If above fails, get the original submission score
+  for (const submission of submissions) {
+    // Do not pick the submission that is related to the appeal
+    const isNewFileSubmission = appeals.some((appeal) => appeal.newFileSubmissionId === submission.id);
+
+    if (!isNewFileSubmission && submission.reports.length > 0 && submission.reports[0].grade.score) {
+      return submission.reports[0].grade.score;
+    }
+  }
+
+  return null;
 }
 
 interface AssignmentContentProps {
@@ -468,44 +471,34 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
   }
 
   // Display Error if data cannot be fetched
+  let errorMessage: string | null = null;
   if (submissionError) {
-    const errorMessage = "Unable to Fetch submission details with `SUBMISSION_SUBSCRIPTION`";
-    return <DisplayError content={content} errorMessage={errorMessage} />;
-  } else if (appealConfigError) {
-    const errorMessage = "Unable to Fetch appeal details with `GET_APPEAL_CONFIG`";
-    return <DisplayError content={content} errorMessage={errorMessage} />;
-  } else if (appealDetailsError) {
-    const errorMessage = "Unable to Fetch appeal details with `GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID`";
-    return <DisplayError content={content} errorMessage={errorMessage} />;
-  } else if (appealChangeLogError) {
-    const errorMessage = "Unable to Fetch appeal details with `GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID`";
+    errorMessage = "Failed to fetch submission details.";
+  } else if (appealConfigError || appealDetailsError || appealChangeLogError) {
+    errorMessage = "Failed to fetch appeal details";
+  }
+  if (errorMessage) {
     return <DisplayError content={content} errorMessage={errorMessage} />;
   }
 
   // Translate `appealDetailsData` to `AppealAttempt[]`
-  let appealAttempts: AppealAttempt[] = transformToAppealAttempt({ appealsDetailsData });
+  const appealAttempts: AppealAttempt[] = transformToAppealAttempt({ appealsDetailsData });
 
   // Transform and sort the lists
-  let message: (
+  const message: (
     | (SubmissionType & { _type: "submission" })
     | (DisplayMessageType & { _type: "appealMessage" })
     | (AppealLog & { _type: "appealLog" })
   )[] = mergeDataToActivityLogList({ appealAttempt: appealAttempts, appealChangeLogData, submissionData });
 
   // Get number of appeal attempt left
-  let appealAttemptLeft: number = appealConfigData!.assignmentConfig!.appealLimits! - appealAttempts.length;
-  if (appealAttemptLeft < 0) appealAttemptLeft = 0;
+  const appealLimits = appealConfigData!.assignmentConfig!.appealLimits;
+  const appealAttemptLeft = Math.max(0, appealConfigData!.assignmentConfig!.appealLimits! - appealAttempts.length);
 
   // Get the original score
-  const score = getScore({
-    appeals: appealsDetailsData?.appeals,
-    changeLogs: appealChangeLogData?.changeLogs,
-    submissions: submissionData?.submissions,
-  });
+  const score = getScore(appealsDetailsData!.appeals, appealChangeLogData!.changeLogs, submissionData!.submissions);
 
-  let maxScore = submissionData?.submissions
-    .filter((e) => !e.isAppeal && e.reports.length > 0)[0]
-    .reports.filter((e) => e.grade)[0].grade.maxTotal;
+  const maxScore = getMaxScore(submissionData?.submissions);
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -570,7 +563,7 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
                 submissionClosed={content.submissionWindowPassed}
                 isOpen={content.openForSubmission}
               />
-              {score && maxScore && (
+              {score && maxScore ? (
                 <GradePanel
                   content={content}
                   assignmentId={content.id}
@@ -580,16 +573,16 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
                   appealAttempt={appealAttempts[0]}
                   appealConfigData={appealConfigData}
                 />
-              )}
+              ) : null}
             </div>
           </li>
           {submissionLoading && <SubmissionLoader />}
           {message &&
-            message.map((log) => {
+            message.map((log, index) => {
               if (log._type === "appealLog") {
-                return <AppealLogMessage key={log.id} log={log} showButton={true} />;
+                return <AppealLogMessage key={index} log={log} showButton={true} />;
               } else if (log._type === "submission") {
-                return <Submission key={log.id} submission={log} />;
+                return <Submission key={index} submission={log} />;
               }
             })}
         </ul>

@@ -11,7 +11,7 @@ import { SUBMISSION_QUERY } from "@/graphql/queries/user";
 import { Layout } from "@/layout";
 import { initializeApollo } from "@/lib/apollo";
 import { Appeal, ChangeLog, Submission } from "@/types";
-import { isInputEmpty } from "@/utils/appealUtils";
+import { getMaxScore, isInputEmpty } from "@/utils/appealUtils";
 import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "@mantine/core";
@@ -325,7 +325,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     : null;
 
   // New appeal cannot be submitted if numAppealsLeft < 1
-  if (!numAppealsLeft || numAppealsLeft! < 1) {
+  if (!numAppealsLeft || numAppealsLeft < 1) {
     errorMessage = "You cannot submit anymore new appeals.";
   }
 
@@ -342,31 +342,31 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     nonAppealSubmissions.length > 0 ? nonAppealSubmissions[0].reports.filter((e) => e.grade && e.grade.score) : null;
 
   let score = reports && reports.length > 0 ? reports[0].grade.score : null;
-  // Get the latest `ACCEPTED` appeal with a new score generated
-  const latestAcceptedAppeal = appealDetailsData?.appeals.find((e) => e.status === "ACCEPTED" && e.newFileSubmissionId);
 
-  // Get the latest `SCORE` change log
-  const latestScoreChange = appealChangeLogData?.changeLogs.find((e) => e.type === "SCORE");
+  const latestAppeal = appealDetailsData?.appeals[0];
+  const latestAppealUpdateDate = latestAppeal?.updatedAt ? new Date(latestAppeal.updatedAt) : null;
 
-  if (latestScoreChange && latestScoreChange.updatedState.type === "score" && !latestAcceptedAppeal) {
-    // latest update was score change
-    score = latestScoreChange.updatedState.score;
-  } else if (latestAcceptedAppeal && !latestScoreChange) {
-    // latest update was successful appeal with file submission
-    return latestAcceptedAppeal.submission.reports[0]?.grade.score;
-  } else if (!latestAcceptedAppeal && !latestScoreChange) {
-    // original submission score
-    return score;
-  } else {
-    const latestAppealTime = new Date(latestAcceptedAppeal!.updatedAt!);
-    const latestScoreTime = new Date(latestScoreChange!.createdAt);
-    return latestAppealTime > latestScoreTime
-      ? latestAcceptedAppeal!.submission.reports[0].grade.score
-      : latestScoreChange!.updatedState.type === "score" && latestScoreChange!.updatedState.score;
+  if (latestAppeal && appealChangeLogData?.changeLogs) {
+    for (const changeLog of appealChangeLogData.changeLogs) {
+      const logDate = new Date(changeLog.createdAt);
+      if (
+        latestAppealUpdateDate &&
+        logDate < latestAppealUpdateDate &&
+        latestAppeal.status === "ACCEPTED" &&
+        latestAppeal.newFileSubmissionId &&
+        latestAppeal.submission &&
+        latestAppeal.submission.reports.length > 0
+      ) {
+        score = latestAppeal.submission.reports[0].grade.score;
+        break;
+      } else if (changeLog.type === "SCORE") {
+        score = changeLog.updatedState.replace(/[^0-9]/g, "");
+        break;
+      }
+    }
   }
-  const maxScore = submissionsData?.submissions
-    .filter((e) => !e.isAppeal && e.reports.length > 0)[0]
-    .reports.filter((e) => e.grade)[0].grade.maxTotal;
+
+  const maxScore = getMaxScore(submissionsData?.submissions);
 
   /** Whether student got full mark in the latest submission */
   const isFullMark = score === maxScore;
