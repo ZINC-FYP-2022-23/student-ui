@@ -32,13 +32,14 @@ import axios from "axios";
 
 interface ButtonProps {
   comments: string; // The text message sent to the TA when submitting the appeal
+  setComments: (x: string) => void;
   userId: number;
 }
 
 /**
  * Returns a appeal submission button
  */
-function AppealMessageButton({ userId, comments }: ButtonProps) {
+function AppealMessageButton({ userId, comments, setComments }: ButtonProps) {
   const dispatch = useLayoutDispatch();
   const router = useRouter();
   const { appealId } = router.query;
@@ -64,6 +65,7 @@ function AppealMessageButton({ userId, comments }: ButtonProps) {
               },
             });
 
+            setComments("");
             return;
           } catch (error: any) {
             const { status: statusCode, data: responseJson } = error.response;
@@ -150,7 +152,7 @@ function ActivityLogTab({ userId, activityLogList, isAppealStudentReplyAllowed }
           />
           <div className="py-1" />
           <div className="flex justify-center">
-            <AppealMessageButton userId={userId} comments={comments} />
+            <AppealMessageButton userId={userId} comments={comments} setComments={setComments} />
           </div>
         </div>
       )}
