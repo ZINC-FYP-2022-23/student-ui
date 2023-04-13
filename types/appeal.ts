@@ -49,7 +49,7 @@ export enum ChangeLogTypes {
 
 export type ChangeLogState =
   | { type: "score"; score: number }
-  | { type: "status"; status: string }
+  | { type: "status"; status: "ACCEPTED" | "REJECTED" | "PENDING" }
   | { type: "submission"; submission: number };
 
 // Unique types in student-ui
