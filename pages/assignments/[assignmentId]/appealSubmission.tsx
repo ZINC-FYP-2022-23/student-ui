@@ -22,36 +22,9 @@ import { useRouter } from "next/router";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
-// TODO(BRYAN): Remove this when it's done
-/*const onDrop = useCallback(
-  (files) => {
-    setButtonDisabled(true);
-    submitFile(files, true)
-      .then(async ({ status, id }: any) => {
-        if (status === "success") {
-          setNewFileSubmissionId(id);
-          dispatch({
-            type: "showNotification",
-            payload: {
-              title: "Upload success",
-              message: "Submission files for appeal uploaded.",
-              success: true,
-            },
-          });
-        }
-      })
-      .catch((error) => {
-        dispatch({
-          type: "showNotification",
-          payload: { title: "Failed to upload submission files", message: error.message, success: false },
-        });
-      });
-    setButtonDisabled(false);
-  }, [configId],
-);*/
-
 interface AppealButtonProps {
-  comments: string; // The text message sent to the TA when submitting the appeal
+  /** The text message sent to the TA when submitting the appeal. */
+  comments: string;
   userId: number;
   assignmentConfigId: number;
   files: File[];
@@ -97,14 +70,6 @@ function AppealButton({ userId, assignmentConfigId, comments, files }: AppealBut
               .then(async ({ status, id }: any) => {
                 if (status === "success") {
                   newFileSubmissionId = id;
-                  // dispatch({
-                  //   type: "showNotification",
-                  //   payload: {
-                  //     title: "Upload success",
-                  //     message: "Submission files for appeal uploaded.",
-                  //     success: true,
-                  //   },
-                  // });
                 }
               })
               .catch((error) => {
@@ -147,7 +112,6 @@ function AppealButton({ userId, assignmentConfigId, comments, files }: AppealBut
               });
 
               // Redirect to appeal page
-              // router.push(`/assignments/${assignmentConfigId}`);
               router.push(`/appeals/${data.data.createAppeal.id}`);
             } catch (error: any) {
               const { status: statusCode, data: responseJson } = error.response;
@@ -201,7 +165,6 @@ function DisplayLoading({ assignmentId }: DisplayLoadingProps) {
           <div className="p-5 flex flex-1 flex-col h-full w-max">
             <div className="pb-3">
               <div className="my-1 flex items-center">
-                {/* TODO(BRYAN): Query the assignment ID instead of passing its value from getServerSideProps(). */}
                 <Link href={`/assignments/${assignmentId}`}>
                   <a className="max-w-max-content w-max px-3 py-1.5 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
                     <FontAwesomeIcon icon={["far", "chevron-left"]} className="mr-2" />
@@ -221,7 +184,8 @@ function DisplayLoading({ assignmentId }: DisplayLoadingProps) {
 
 interface DisplayErrorProps {
   assignmentId: number;
-  errorMessage: string; // Message shown to the user when encountering an error
+  /** Message shown to the user when encountering an error. */
+  errorMessage: string;
 }
 
 /**
@@ -326,52 +290,34 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
   }
 
   // Display error if it occurred
-  if (appealConfigError) {
-    const errorMessage = "Unable to Fetch appeal details with `GET_APPEAL_CONFIG`";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
-  } else if (appealDetailsError) {
-    const errorMessage = "Unable to Fetch appeal details with `GET_APPEALS_DETAILS_BY_ASSIGNMENT_ID`";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
-  } else if (submissionsError) {
-    const errorMessage = "Unable to Fetch submission details with `SUBMISSION_SUBSCRIPTION`";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
-  } else if (appealChangeLogError) {
-    const errorMessage = "Unable to Fetch submission details with `GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID`";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+  let errorMessage: string | null = null;
+  if (appealConfigError || appealDetailsError) {
+    errorMessage = "Failed to fetch appeal details.";
+  } else if (submissionsError || appealChangeLogError) {
+    errorMessage = "Failed to fetch submission details.";
   } else if (!appealConfigData.assignmentConfig) {
     // Error if `assignmentConfig` is undefined
-    const errorMessage = "`assignmentConfig` is not available";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+    errorMessage = "Assignment config data is not available.";
   } else if (!appealConfigData.assignmentConfig.isAppealAllowed) {
     // Check if the appeal submission is allowed
-    const errorMessage = "The assignment does not allow any appeals.";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+    errorMessage = "The assignment does not allow any appeals.";
   } else if (now < appealConfigData.assignmentConfig.appealStartAt) {
-    const errorMessage = "Time period for appeal submission has not started yet.";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+    errorMessage = "Time period for appeal submission has not started yet.";
   } else if (now > appealConfigData.assignmentConfig.appealStopAt) {
-    const errorMessage = "Time period for appeal submission has passed.";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+    errorMessage = "Time period for appeal submission has passed.";
   } else if (!submissionsData || submissionsData?.submissions.length === 0) {
     // Error if there's no submission
-    const errorMessage = "You have not submitted anything yet for this assignment.";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
-    // } else if (submissionsData?.submissions[0].reports.length === 0) {
-    //   // Error if submission is still being processed
-    //   const errorMessage =
-    //     "Submission is still being processed. Please wait for a few seconds and do not refresh the page.";
-    //   return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+    errorMessage = "You have not submitted anything yet for this assignment.";
   } else if (
     appealDetailsData?.appeals &&
     appealDetailsData.appeals[0] &&
     appealDetailsData.appeals[0].status === "PENDING"
   ) {
     // Does not allow appeal submission if another appeal is `PENDING`
-    const errorMessage = "You are not allowed to submit a new appeal while having a pending appeal.";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+    errorMessage = "You are not allowed to submit a new appeal while having a pending appeal.";
   }
 
-  // Get how many appeal attempts left that can be made
+  /** How many appeal attempts left that can be made. */
   let numAppealsLeft: number | null = appealConfigData.assignmentConfig.appealLimits
     ? appealDetailsData?.appeals.length
       ? appealConfigData.assignmentConfig.appealLimits - appealDetailsData.appeals.length
@@ -380,13 +326,16 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
 
   // New appeal cannot be submitted if numAppealsLeft < 1
   if (!numAppealsLeft || numAppealsLeft! < 1) {
-    const errorMessage = "You cannot submit anymore new appeals.";
+    errorMessage = "You cannot submit anymore new appeals.";
+  }
+
+  if (errorMessage) {
     return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   }
 
   // Get the latest score
   // 1. Get score from latest, non-appeal submission
-  const nonAppealSubmissions = submissionsData.submissions.filter(
+  const nonAppealSubmissions = submissionsData!.submissions.filter(
     (e) => !e.isAppeal && e.reports && e.reports.length > 0,
   );
   const reports =
@@ -394,12 +343,10 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
 
   let score = reports && reports.length > 0 ? reports[0].grade.score : null;
   // Get the latest `ACCEPTED` appeal with a new score generated
-  const latestAcceptedAppeal: Appeal | undefined = appealDetailsData?.appeals.find(
-    (e) => e.status === "ACCEPTED" && e.newFileSubmissionId,
-  );
+  const latestAcceptedAppeal = appealDetailsData?.appeals.find((e) => e.status === "ACCEPTED" && e.newFileSubmissionId);
 
   // Get the latest `SCORE` change log
-  const latestScoreChange: ChangeLog | undefined = appealChangeLogData?.changeLogs.find((e) => e.type === "SCORE");
+  const latestScoreChange = appealChangeLogData?.changeLogs.find((e) => e.type === "SCORE");
 
   if (latestScoreChange && latestScoreChange.updatedState.type === "score" && !latestAcceptedAppeal) {
     // latest update was score change
@@ -411,8 +358,8 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     // original submission score
     return score;
   } else {
-    const latestAppealTime: Date = new Date(latestAcceptedAppeal!.updatedAt!);
-    const latestScoreTime: Date = new Date(latestScoreChange!.createdAt);
+    const latestAppealTime = new Date(latestAcceptedAppeal!.updatedAt!);
+    const latestScoreTime = new Date(latestScoreChange!.createdAt);
     return latestAppealTime > latestScoreTime
       ? latestAcceptedAppeal!.submission.reports[0].grade.score
       : latestScoreChange!.updatedState.type === "score" && latestScoreChange!.updatedState.score;
@@ -421,8 +368,8 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     .filter((e) => !e.isAppeal && e.reports.length > 0)[0]
     .reports.filter((e) => e.grade)[0].grade.maxTotal;
 
-  // Determine whether student got full mark in the latest submission
-  const isFullMark = score === maxScore ? true : false;
+  /** Whether student got full mark in the latest submission */
+  const isFullMark = score === maxScore;
 
   return (
     <LayoutProvider>
@@ -513,7 +460,6 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                       </p>
                     </div>
                     <AppealButton
-                      // 3. TODO(Bryan) Pass `acceptedFiles` from `useDropzone()` hook
                       userId={userId}
                       assignmentConfigId={assignmentId}
                       comments={comments}
