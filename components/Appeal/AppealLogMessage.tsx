@@ -23,7 +23,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
   if (log.type === "APPEAL_SUBMISSION") {
     return (
       <>
-        <div className="mx-12 h-8 border-l-2"></div>
+        <div className="mx-12 h-12 border-l-2" />
         <div className="mx-8 flex justify-between">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-blue-300 rounded-full flex justify-center items-center">
@@ -44,7 +44,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
             <span className="inline-flex rounded-md shadow-sm">
               <Link href={`/appeals/${log.appealId}`}>
                 <a className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
-                  View Appeal
+                  View appeal
                 </a>
               </Link>
             </span>
@@ -58,7 +58,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
   if (log.type === ChangeLogTypes.APPEAL_STATUS && log.updatedState && log.updatedState.type === "status") {
     return (
       <>
-        <div className="mx-12 h-8 border-l-2"></div>
+        <div className="mx-12 h-12 border-l-2" />
         <div className="mx-8 flex justify-between">
           <div className="flex items-center">
             <div
@@ -98,7 +98,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
             <span className="inline-flex rounded-md shadow-sm">
               <Link href={`/appeals/${log.appealId}`}>
                 <a className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
-                  View Appeal
+                  View appeal
                 </a>
               </Link>
             </span>
@@ -118,7 +118,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
   ) {
     return (
       <>
-        <div className="mx-12 h-8 border-l-2"></div>
+        <div className="mx-12 h-12 border-l-2" />
         <div className="mx-8 flex justify-between">
           <div className="flex items-center">
             <div
@@ -162,7 +162,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
             <span className="inline-flex rounded-md shadow-sm">
               <Link href={`/appeals/${log.appealId}`}>
                 <a className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
-                  View Appeal
+                  View appeal
                 </a>
               </Link>
             </span>
@@ -182,7 +182,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
   ) {
     return (
       <>
-        <div className="mx-12 h-8 border-l-2"></div>
+        <div className="mx-12 h-12 border-l-2" />
         <div className="mx-8 flex justify-between">
           <div className="flex items-center">
             <div
@@ -219,7 +219,7 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
             <span className="inline-flex rounded-md shadow-sm">
               <Link href={`/${assignmentConfigId}/${log.id}`}>
                 <a className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
-                  View Appeal
+                  View appeal
                 </a>
               </Link>
             </span>
@@ -229,10 +229,12 @@ export function AppealLogMessage({ log, showButton }: AppealLogMessageType) {
     );
   }
 
+  console.log("Unidentified log", log);
+
   // Error for unidentified log
   return (
     <li className="list-none">
-      <div className="mx-12 h-8 border-l-2"></div>
+      <div className="mx-12 h-12 border-l-2" />
       <div className="mx-8 flex justify-between">
         <div className="flex items-center">
           <div
