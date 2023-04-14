@@ -10,8 +10,9 @@ import {
 import { SUBMISSION_QUERY } from "@/graphql/queries/user";
 import { Layout } from "@/layout";
 import { initializeApollo } from "@/lib/apollo";
-import { Appeal, ChangeLog, Submission } from "@/types/tables";
+import { Appeal, AssignmentConfig, ChangeLog, Submission } from "@/types/tables";
 import { getMaxScore, isInputEmpty } from "@/utils/appealUtils";
+import { getLocalDateFromString } from "@/utils/date";
 import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "@mantine/core";
@@ -261,7 +262,9 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     data: appealConfigData,
     loading: appealConfigLoading,
     error: appealConfigError,
-  } = useQuery(GET_APPEAL_CONFIG, { variables: { assignmentConfigId: assignmentId } });
+  } = useQuery<{ assignmentConfig: AssignmentConfig }>(GET_APPEAL_CONFIG, {
+    variables: { assignmentConfigId: assignmentId },
+  });
   const {
     data: submissionsData,
     loading: submissionLoading,
@@ -289,21 +292,24 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     return <DisplayLoading assignmentId={assignmentId} />;
   }
 
+  const appealStartAt = getLocalDateFromString(appealConfigData?.assignmentConfig.appealStartAt ?? null);
+  const appealStopAt = getLocalDateFromString(appealConfigData?.assignmentConfig.appealStopAt ?? null);
+
   // Display error if it occurred
   let errorMessage: string | null = null;
   if (appealConfigError || appealDetailsError) {
     errorMessage = "Failed to fetch appeal details.";
   } else if (submissionsError || appealChangeLogError) {
     errorMessage = "Failed to fetch submission details.";
-  } else if (!appealConfigData.assignmentConfig) {
+  } else if (!appealConfigData?.assignmentConfig) {
     // Error if `assignmentConfig` is undefined
     errorMessage = "Assignment config data is not available.";
   } else if (!appealConfigData.assignmentConfig.isAppealAllowed) {
     // Check if the appeal submission is allowed
     errorMessage = "The assignment does not allow any appeals.";
-  } else if (now < appealConfigData.assignmentConfig.appealStartAt) {
+  } else if (appealStartAt && now < appealStartAt) {
     errorMessage = "Time period for appeal submission has not started yet.";
-  } else if (now > appealConfigData.assignmentConfig.appealStopAt) {
+  } else if (appealStopAt && now > appealStopAt) {
     errorMessage = "Time period for appeal submission has passed.";
   } else if (!submissionsData || submissionsData?.submissions.length === 0) {
     // Error if there's no submission
@@ -318,7 +324,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
   }
 
   /** How many appeal attempts left that can be made. */
-  let numAppealsLeft: number | null = appealConfigData.assignmentConfig.appealLimits
+  let numAppealsLeft: number | null = appealConfigData?.assignmentConfig.appealLimits
     ? appealDetailsData?.appeals.length
       ? appealConfigData.assignmentConfig.appealLimits - appealDetailsData.appeals.length
       : appealConfigData.assignmentConfig.appealLimits

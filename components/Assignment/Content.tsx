@@ -6,6 +6,7 @@ import {
 import { AppealAttempt, AppealLog, AppealStatus, DisplayMessageType } from "@/types/appeal";
 import { Appeal, AssignmentConfig, ChangeLog, Submission as SubmissionType } from "@/types/tables";
 import { getMaxScore, mergeDataToActivityLogList, transformToAppealAttempt } from "@/utils/appealUtils";
+import { getLocalDateFromString } from "@/utils/date";
 import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "@mantine/core";
@@ -195,9 +196,12 @@ interface GradePanelProps {
   assignmentId: number;
   score: number;
   maxScore: number;
-  appealAttemptLeft: number; // Number of appeals attempt that can be made left
-  appealAttempt: AppealAttempt; // The latest appeal attempt
-  appealConfigData; // Raw data of appeal configs
+  /** Number of appeals attempt that can be made left. */
+  appealAttemptLeft: number;
+  /** The latest appeal attempt. */
+  appealAttempt: AppealAttempt;
+  /** Raw data of appeal configs. */
+  appealConfigData: { assignmentConfig: AssignmentConfig } | undefined;
 }
 
 /**
@@ -219,6 +223,8 @@ function GradePanel({
     appealStatus = appealAttempt.status;
   }
   const now = new Date();
+  const appealStartAt = getLocalDateFromString(appealConfigData?.assignmentConfig.appealStartAt ?? null);
+  const appealStopAt = getLocalDateFromString(appealConfigData?.assignmentConfig.appealStopAt ?? null);
 
   // Error if appealConfigData is undefined or null
   if (!appealConfigData) {
@@ -234,8 +240,8 @@ function GradePanel({
   if (
     appealAttemptLeft <= 0 ||
     !appealConfigData.assignmentConfig.isAppealAllowed ||
-    now < appealConfigData.assignmentConfig.appealStartAt ||
-    now > appealConfigData.assignmentConfig.appealStopAt
+    (appealStartAt && now < appealStartAt) ||
+    (appealStopAt && now > appealStopAt)
   )
     appealGradeButtonDisabled = true;
 
