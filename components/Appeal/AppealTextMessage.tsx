@@ -1,8 +1,10 @@
 import { DisplayMessageType } from "@/types/appeal";
 
 interface IconProps {
-  name: string; // User name
-  type: "Student" | "Teaching Assistant"; // User type
+  /** User name */
+  name: string;
+  /** User type */
+  type: "Student" | "Teaching Assistant";
 }
 
 /**
@@ -44,22 +46,22 @@ export function AppealTextMessage({ message }: { message: DisplayMessageType }) 
   let borderColor: string;
   switch (type) {
     case "Student":
-      backgroundColor = "bg-blue-100 ";
-      borderColor = "border-blue-800 ";
+      backgroundColor = "bg-blue-100";
+      borderColor = "border-blue-800";
       break;
     case "Teaching Assistant":
-      backgroundColor = "bg-red-100 ";
-      borderColor = "border-red-800 ";
+      backgroundColor = "bg-red-100";
+      borderColor = "border-red-800";
       break;
     default:
-      backgroundColor = "bg-gray-100 ";
-      borderColor = "border-gray-800 ";
+      backgroundColor = "bg-gray-100";
+      borderColor = "border-gray-800";
   }
-  const backgroundCSS = "p-3 mx-8 flex justify-between rounded-lg border-2 " + backgroundColor + borderColor;
+  const backgroundCSS = `p-3 mx-8 flex justify-between rounded-lg border-2 ${backgroundColor} ${borderColor}`;
 
   return (
     <>
-      <div className="h-4 border-l-2"></div>
+      <div className="h-8" />
       <div className={backgroundCSS}>
         <div className="flex flex-row space-x-2">
           <Icon name={name} type={type} />

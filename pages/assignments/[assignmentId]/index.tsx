@@ -24,14 +24,10 @@ function ModalContent() {
   }
 }
 
-interface AssignmentProps {
-  userId: number;
-}
-
 /**
  * The Assignment Submission Page
  */
-function Assignment({ userId }: AssignmentProps) {
+function Assignment() {
   const router = useRouter();
   const { assignmentId } = router.query;
   const assignmentConfigId = parseInt(assignmentId as string, 10);

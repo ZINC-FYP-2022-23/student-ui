@@ -71,8 +71,8 @@ export type AssignmentConfig = {
   /** Appeal-related */
   isAppealAllowed: boolean;
   appealLimits: number | null;
-  appealStartAt: Date | null;
-  appealStopAt: Date | null;
+  appealStartAt: string | null;
+  appealStopAt: string | null;
   isAppealStudentReplyAllowed: boolean;
   isAppealViewReportAllowed: boolean;
   assignmentAppeals: Appeal[];
@@ -102,6 +102,7 @@ export type ChangeLog = {
   type: string;
   originalState: ChangeLogState;
   updatedState: ChangeLogState;
+  /** User ID */
   initiatedBy: number;
   reason: string;
   appealId: number | null;

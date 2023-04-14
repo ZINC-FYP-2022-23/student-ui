@@ -10,8 +10,9 @@ import {
 import { SUBMISSION_QUERY } from "@/graphql/queries/user";
 import { Layout } from "@/layout";
 import { initializeApollo } from "@/lib/apollo";
-import { Appeal, ChangeLog, Submission } from "@/types";
-import { isInputEmpty } from "@/utils/appealUtils";
+import { Appeal, AssignmentConfig, ChangeLog, Submission } from "@/types/tables";
+import { getMaxScore, isInputEmpty } from "@/utils/appealUtils";
+import { getLocalDateFromString } from "@/utils/date";
 import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "@mantine/core";
@@ -66,20 +67,22 @@ function AppealButton({ userId, assignmentConfigId, comments, files }: AppealBut
             setButtonDisabled(true);
 
             // Submit the new file(s)
-            await submitFile(files, true)
-              .then(async ({ status, id }: any) => {
-                if (status === "success") {
-                  newFileSubmissionId = id;
-                }
-              })
-              .catch((error) => {
-                dispatch({
-                  type: "showNotification",
-                  payload: { title: "Failed to upload submission files", message: error.message, success: false },
+            if (files.length) {
+              await submitFile(files, true)
+                .then(async ({ status, id }: any) => {
+                  if (status === "success") {
+                    newFileSubmissionId = id;
+                  }
+                })
+                .catch((error) => {
+                  dispatch({
+                    type: "showNotification",
+                    payload: { title: "Failed to upload submission files", message: error.message, success: false },
+                  });
+                  setButtonDisabled(false);
+                  return;
                 });
-                setButtonDisabled(false);
-                return;
-              });
+            }
 
             // Submit appeal
             try {
@@ -247,7 +250,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
         });
       }
     },
-    [assignmentId],
+    [dispatch],
   );
 
   const { acceptedFiles, getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -261,7 +264,9 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     data: appealConfigData,
     loading: appealConfigLoading,
     error: appealConfigError,
-  } = useQuery(GET_APPEAL_CONFIG, { variables: { assignmentConfigId: assignmentId } });
+  } = useQuery<{ assignmentConfig: AssignmentConfig }>(GET_APPEAL_CONFIG, {
+    variables: { assignmentConfigId: assignmentId },
+  });
   const {
     data: submissionsData,
     loading: submissionLoading,
@@ -289,21 +294,24 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     return <DisplayLoading assignmentId={assignmentId} />;
   }
 
+  const appealStartAt = getLocalDateFromString(appealConfigData?.assignmentConfig.appealStartAt ?? null);
+  const appealStopAt = getLocalDateFromString(appealConfigData?.assignmentConfig.appealStopAt ?? null);
+
   // Display error if it occurred
   let errorMessage: string | null = null;
   if (appealConfigError || appealDetailsError) {
     errorMessage = "Failed to fetch appeal details.";
   } else if (submissionsError || appealChangeLogError) {
     errorMessage = "Failed to fetch submission details.";
-  } else if (!appealConfigData.assignmentConfig) {
+  } else if (!appealConfigData?.assignmentConfig) {
     // Error if `assignmentConfig` is undefined
     errorMessage = "Assignment config data is not available.";
   } else if (!appealConfigData.assignmentConfig.isAppealAllowed) {
     // Check if the appeal submission is allowed
     errorMessage = "The assignment does not allow any appeals.";
-  } else if (now < appealConfigData.assignmentConfig.appealStartAt) {
+  } else if (appealStartAt && now < appealStartAt) {
     errorMessage = "Time period for appeal submission has not started yet.";
-  } else if (now > appealConfigData.assignmentConfig.appealStopAt) {
+  } else if (appealStopAt && now > appealStopAt) {
     errorMessage = "Time period for appeal submission has passed.";
   } else if (!submissionsData || submissionsData?.submissions.length === 0) {
     // Error if there's no submission
@@ -318,14 +326,14 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
   }
 
   /** How many appeal attempts left that can be made. */
-  let numAppealsLeft: number | null = appealConfigData.assignmentConfig.appealLimits
+  let numAppealsLeft: number | null = appealConfigData?.assignmentConfig.appealLimits
     ? appealDetailsData?.appeals.length
       ? appealConfigData.assignmentConfig.appealLimits - appealDetailsData.appeals.length
       : appealConfigData.assignmentConfig.appealLimits
     : null;
 
   // New appeal cannot be submitted if numAppealsLeft < 1
-  if (!numAppealsLeft || numAppealsLeft! < 1) {
+  if (!numAppealsLeft || numAppealsLeft < 1) {
     errorMessage = "You cannot submit anymore new appeals.";
   }
 
@@ -342,31 +350,31 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
     nonAppealSubmissions.length > 0 ? nonAppealSubmissions[0].reports.filter((e) => e.grade && e.grade.score) : null;
 
   let score = reports && reports.length > 0 ? reports[0].grade.score : null;
-  // Get the latest `ACCEPTED` appeal with a new score generated
-  const latestAcceptedAppeal = appealDetailsData?.appeals.find((e) => e.status === "ACCEPTED" && e.newFileSubmissionId);
 
-  // Get the latest `SCORE` change log
-  const latestScoreChange = appealChangeLogData?.changeLogs.find((e) => e.type === "SCORE");
+  const latestAppeal = appealDetailsData?.appeals[0];
+  const latestAppealUpdateDate = latestAppeal?.updatedAt ? new Date(latestAppeal.updatedAt) : null;
 
-  if (latestScoreChange && latestScoreChange.updatedState.type === "score" && !latestAcceptedAppeal) {
-    // latest update was score change
-    score = latestScoreChange.updatedState.score;
-  } else if (latestAcceptedAppeal && !latestScoreChange) {
-    // latest update was successful appeal with file submission
-    return latestAcceptedAppeal.submission.reports[0]?.grade.score;
-  } else if (!latestAcceptedAppeal && !latestScoreChange) {
-    // original submission score
-    return score;
-  } else {
-    const latestAppealTime = new Date(latestAcceptedAppeal!.updatedAt!);
-    const latestScoreTime = new Date(latestScoreChange!.createdAt);
-    return latestAppealTime > latestScoreTime
-      ? latestAcceptedAppeal!.submission.reports[0].grade.score
-      : latestScoreChange!.updatedState.type === "score" && latestScoreChange!.updatedState.score;
+  if (latestAppeal && appealChangeLogData?.changeLogs) {
+    for (const changeLog of appealChangeLogData.changeLogs) {
+      const logDate = new Date(changeLog.createdAt);
+      if (
+        latestAppealUpdateDate &&
+        logDate < latestAppealUpdateDate &&
+        latestAppeal.status === "ACCEPTED" &&
+        latestAppeal.newFileSubmissionId &&
+        latestAppeal.submission &&
+        latestAppeal.submission.reports.length > 0
+      ) {
+        score = latestAppeal.submission.reports[0].grade.score;
+        break;
+      } else if (changeLog.type === "SCORE") {
+        score = changeLog.updatedState["score"];
+        break;
+      }
+    }
   }
-  const maxScore = submissionsData?.submissions
-    .filter((e) => !e.isAppeal && e.reports.length > 0)[0]
-    .reports.filter((e) => e.grade)[0].grade.maxTotal;
+
+  const maxScore = getMaxScore(submissionsData?.submissions);
 
   /** Whether student got full mark in the latest submission */
   const isFullMark = score === maxScore;
@@ -456,7 +464,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                     <div className="flex items-center mt-4 mb-4">
                       <FontAwesomeIcon icon={["far", "octagon-exclamation"]} className="text-red-600 mr-2 text-lg" />
                       <p className="text-red-600 text-lg font-medium">
-                        Your have got Full Mark. Are you sure you wish to submit a grade appeal?
+                        Your assignment got full marks. Are you sure to submit a grade appeal?
                       </p>
                     </div>
                     <AppealButton
