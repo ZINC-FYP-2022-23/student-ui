@@ -211,11 +211,7 @@ interface mergeDataToActivityLogListProps {
 
 /**
  * Merges appeal
- * @returns {(
- * | (SubmissionType & { _type: "submission" }
- * | (DisplayMessageType & { _type: "appealMessage" })
- * | (AppealLog & { _type: "appealLog" })
- * )[]} - List of transformed and merged appeal logs, ordered from newest to oldest
+ * @returns List of transformed and merged appeal logs, ordered from newest to oldest
  */
 export function mergeDataToActivityLogList({
   appealAttempt,
