@@ -27,11 +27,10 @@ import { SubmissionLoader } from "../SubmissionLoader";
 
 /**
  * Returns a component of the file submission area, where students can drag-and-drop their files to be submitted.
- * @param {boolean} isOpen - Is the submission opened yet.
- * @param {boolean} submissionClosed - Is the submission closed already.
- * @param {number} configId - Configuration ID
+ * @param isOpen - Is the submission opened yet.
+ * @param submissionClosed - Is the submission closed already.
  */
-function AssignmentSubmission({ submissionClosed, configId, isOpen }) {
+function AssignmentSubmission({ submissionClosed, isOpen }) {
   const { user, submitFile } = useZinc();
   // const [updateSubmissionNoti] = useMutation(UPDATE_SUBMISSION_NOTI)
   const dispatch = useLayoutDispatch();
@@ -310,7 +309,6 @@ function DisplayLoading({ content }: DisplayLoadingProps) {
               </div>
               <div className="my-6" dangerouslySetInnerHTML={{ __html: content.assignment.description }} />
               <AssignmentSubmission
-                configId={content.id}
                 submissionClosed={content.submissionWindowPassed}
                 isOpen={content.openForSubmission}
               />
@@ -346,7 +344,6 @@ function DisplayError({ content, errorMessage }: DisplayErrorProps) {
               </div>
               <div className="my-6" dangerouslySetInnerHTML={{ __html: content.assignment.description }} />
               <AssignmentSubmission
-                configId={content.id}
                 submissionClosed={content.submissionWindowPassed}
                 isOpen={content.openForSubmission}
               />
@@ -559,7 +556,6 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
               </div>
               <div className="my-6" dangerouslySetInnerHTML={{ __html: content.assignment.description }} />
               <AssignmentSubmission
-                configId={content.id}
                 submissionClosed={content.submissionWindowPassed}
                 isOpen={content.openForSubmission}
               />

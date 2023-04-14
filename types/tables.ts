@@ -102,6 +102,7 @@ export type ChangeLog = {
   type: string;
   originalState: ChangeLogState;
   updatedState: ChangeLogState;
+  /** User ID */
   initiatedBy: number;
   reason: string;
   appealId: number | null;

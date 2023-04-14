@@ -2,12 +2,11 @@ import {
   AppealAttempt,
   AppealLog,
   AppealStatus,
-  ChangeLog,
   ChangeLogState,
   ChangeLogTypes,
   DisplayMessageType,
 } from "@/types/appeal";
-import { Submission as SubmissionType } from "@/types/tables";
+import { ChangeLog, Submission as SubmissionType } from "@/types/tables";
 
 /**
  * Compute the maximum score of the assignment from the submissions.
@@ -172,7 +171,6 @@ interface transformToAppealLogProps {
  */
 function transformToAppealLog({ appeals, changeLog }: transformToAppealLogProps): AppealLog[] {
   let appealLog: AppealLog[] = [];
-  let log: AppealLog;
 
   appeals.forEach((appeal) => {
     appealLog.push({
@@ -186,7 +184,8 @@ function transformToAppealLog({ appeals, changeLog }: transformToAppealLogProps)
   changeLog.forEach((log) => {
     appealLog.push({
       id: log.id,
-      appealId: log.appealId,
+      appealId: log.appealId ?? undefined,
+      // @ts-ignore
       type: log.type,
       date: log.createdAt,
       originalState: log.originalState,
@@ -245,6 +244,9 @@ export function mergeDataToActivityLogList({
       appealId: log.appealId,
       assignmentConfigId: log.assignmentConfigId,
       userId: log.userId,
+      reportId: log.reportId,
+      submissionId: log.submissionId,
+      user: log.user,
     });
   });
 

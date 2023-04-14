@@ -10,7 +10,7 @@ import {
 import { SUBMISSION_QUERY } from "@/graphql/queries/user";
 import { Layout } from "@/layout";
 import { initializeApollo } from "@/lib/apollo";
-import { Appeal, ChangeLog, Submission } from "@/types";
+import { Appeal, ChangeLog, Submission } from "@/types/tables";
 import { getMaxScore, isInputEmpty } from "@/utils/appealUtils";
 import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
