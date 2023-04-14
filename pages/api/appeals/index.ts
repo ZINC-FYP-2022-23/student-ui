@@ -1,8 +1,9 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import axios from "axios";
-import { utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
 import { CREATE_APPEAL } from "@/graphql/mutations/appealMutations";
 import { GET_APPEAL_VALIDATION_DATA } from "@/graphql/queries/appealQueries";
+import { getLocalDateFromString } from "@/utils/date";
+import axios from "axios";
+import { zonedTimeToUtc } from "date-fns-tz";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
   const body = req.body;
@@ -68,15 +69,16 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
         error: "Appeal period not configured. Please consult the course coordinator or TAs.",
       });
     }
-    const appealStartAt: Date = utcToZonedTime(appealValidationData.assignmentConfig.appealStartAt, "Asia/Hong_Kong");
-    const appealStopAt: Date = utcToZonedTime(appealValidationData.assignmentConfig.appealStopAt, "Asia/Hong_Kong");
-    if (now.getTime() < appealStartAt.getTime()) {
+    const appealStartAt = getLocalDateFromString(appealValidationData.assignmentConfig.appealStartAt);
+    const appealStopAt = getLocalDateFromString(appealValidationData.assignmentConfig.appealStopAt);
+
+    if (appealStartAt && now < appealStartAt) {
       return res.status(403).json({
         status: "error",
-        error: "Should not submit appeal before appeal period.",
+        error: "You cannot submit appeal before the appeal period.",
       });
     }
-    if (now.getTime() >= appealStopAt.getTime()) {
+    if (appealStopAt && now >= appealStopAt) {
       return res.status(403).json({
         status: "error",
         error: "Late appeal denied.",
@@ -113,7 +115,7 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default async function (req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     switch (req.method?.toUpperCase()) {
       case "POST":
@@ -131,6 +133,8 @@ export default async function (req: NextApiRequest, res: NextApiResponse) {
     });
   }
 }
+
+export default handler;
 
 export const config = {
   api: {

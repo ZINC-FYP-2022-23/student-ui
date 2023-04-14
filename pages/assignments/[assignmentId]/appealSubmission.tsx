@@ -67,20 +67,22 @@ function AppealButton({ userId, assignmentConfigId, comments, files }: AppealBut
             setButtonDisabled(true);
 
             // Submit the new file(s)
-            await submitFile(files, true)
-              .then(async ({ status, id }: any) => {
-                if (status === "success") {
-                  newFileSubmissionId = id;
-                }
-              })
-              .catch((error) => {
-                dispatch({
-                  type: "showNotification",
-                  payload: { title: "Failed to upload submission files", message: error.message, success: false },
+            if (files.length) {
+              await submitFile(files, true)
+                .then(async ({ status, id }: any) => {
+                  if (status === "success") {
+                    newFileSubmissionId = id;
+                  }
+                })
+                .catch((error) => {
+                  dispatch({
+                    type: "showNotification",
+                    payload: { title: "Failed to upload submission files", message: error.message, success: false },
+                  });
+                  setButtonDisabled(false);
+                  return;
                 });
-                setButtonDisabled(false);
-                return;
-              });
+            }
 
             // Submit appeal
             try {
@@ -462,7 +464,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                     <div className="flex items-center mt-4 mb-4">
                       <FontAwesomeIcon icon={["far", "octagon-exclamation"]} className="text-red-600 mr-2 text-lg" />
                       <p className="text-red-600 text-lg font-medium">
-                        Your have got Full Mark. Are you sure you wish to submit a grade appeal?
+                        Your assignment got full marks. Are you sure to submit a grade appeal?
                       </p>
                     </div>
                     <AppealButton
