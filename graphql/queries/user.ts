@@ -78,6 +78,7 @@ export const SUBMISSION_SUBSCRIPTION = gql`
       where: { user_id: { _eq: $userId }, assignment_config_id: { _eq: $assignmentConfigId } }
     ) {
       id
+      isAppeal
       created_at
       upload_name
       fail_reason
@@ -98,6 +99,7 @@ export const SUBMISSION_QUERY = gql`
       where: { user_id: { _eq: $userId }, assignment_config_id: { _eq: $assignmentConfigId } }
     ) {
       id
+      isAppeal
       created_at
       upload_name
       fail_reason
