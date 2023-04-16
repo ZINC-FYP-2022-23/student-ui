@@ -276,14 +276,14 @@ function GradePanel({
       <p className={gradeTextCss}>
         Your Grade: <span className="font-bold">{score}</span>/{maxScore}
       </p>
-      {appealId && appealStatus && (
+      {appealConfigData.assignmentConfig.isAppealAllowed && appealId && appealStatus && (
         <>
           <AppealDetailsButton appealId={appealId} />
           <AppealResult appealResult={appealStatus} />
         </>
       )}
       {/* Only allow students to submit an appeal if not appealed before or latest appeal has been accepted or rejected */}
-      {appealStatus !== AppealStatus.PENDING && (
+      {appealConfigData.assignmentConfig.isAppealAllowed && appealStatus !== AppealStatus.PENDING && (
         <>
           <AppealGradeButton assignmentId={assignmentId} disabled={appealGradeButtonDisabled} />
           <p className={attemptLeftTextCss}>Appeal Attempts Left: {appealAttemptLeft}</p>
