@@ -1,5 +1,6 @@
 import { AppealLog, ChangeLogTypes } from "@/types/appeal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { clsx } from "@mantine/core";
 import Link from "next/link";
 
 interface AppealLogMessageType {
@@ -197,18 +198,21 @@ export function AppealLogMessage({ log, showButton, showReason }: AppealLogMessa
           <div className="mt-1.5">{content}</div>
         </div>
         <div>
-          {/* TODO: Fix button position in UI */}
           {log.newFileSubmissionId && (
-            // TODO: Fix error after downloading this submission
             <Link href={`/api/submissions/${log.newFileSubmissionId}`}>
-              <a className="self-start inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
+              <a className="self-start inline-flex items-center px-3 py-1.5 border border-r-0 border-gray-300 text-xs leading-4 font-medium rounded-l-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
                 Download submission
               </a>
             </Link>
           )}
           {showButton && (
             <Link href={`/appeals/${log.appealId}`}>
-              <a className="self-start inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
+              <a
+                className={clsx(
+                  "self-start inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150",
+                  log.newFileSubmissionId ? "rounded-r-lg" : "rounded-lg",
+                )}
+              >
                 View appeal
               </a>
             </Link>
