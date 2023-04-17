@@ -2,7 +2,6 @@ import { CREATE_APPEAL } from "@/graphql/mutations/appealMutations";
 import { GET_APPEAL_VALIDATION_DATA } from "@/graphql/queries/appealQueries";
 import { getLocalDateFromString } from "@/utils/date";
 import axios from "axios";
-import { zonedTimeToUtc } from "date-fns-tz";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
@@ -11,9 +10,6 @@ async function handlePostAppeal(req: NextApiRequest, res: NextApiResponse) {
   const assignmentConfigId = body.assignmentConfigId;
 
   const now: Date = new Date();
-  body.createdAt = zonedTimeToUtc(now, "Asia/Hong_Kong");
-  body.updatedAt = zonedTimeToUtc(now, "Asia/Hong_Kong");
-  body.assignmentAppealMessages.data[0].createdAt = zonedTimeToUtc(now, "Asia/Hong_Kong");
 
   try {
     // Search for previous appeal attempts and assignment config
