@@ -39,6 +39,7 @@ export type AppealLog = {
   originalState?: ChangeLogState;
   updatedState?: ChangeLogState;
   reason?: string;
+  newFileSubmissionId?: number;
 };
 
 export type DisplayMessageType = {

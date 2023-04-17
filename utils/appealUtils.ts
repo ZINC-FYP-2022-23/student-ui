@@ -178,6 +178,7 @@ function transformToAppealLog({ appeals, changeLog }: transformToAppealLogProps)
       appealId: appeal.id,
       type: "APPEAL_SUBMISSION",
       date: appeal.createdAt,
+      newFileSubmissionId: appeal.newFileSubmissionId,
     });
   });
 
@@ -278,7 +279,7 @@ export function mergeDataToActivityLogList({
   )[] = sort({
     messages: messages,
     appealLog: log,
-    submissions: submissionData?.submissions,
+    submissions: submissionData?.submissions?.filter((e) => !e.isAppeal),
   });
 
   return activityLogList;
