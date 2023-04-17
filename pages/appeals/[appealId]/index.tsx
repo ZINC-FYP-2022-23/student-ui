@@ -127,12 +127,12 @@ function ActivityLogTab({ userId, activityLogList, isAppealStudentReplyAllowed }
           ) => {
             if (log._type === "appealLog") {
               return (
-                <div key={log.id} className="px-3">
+                <div key={`log-${log.id}`} className="px-3">
                   <AppealLogMessage log={log} showButton={false} showReason />
                 </div>
               );
             } else if (log._type === "appealMessage") {
-              return <AppealTextMessage key={log.id} message={log} />;
+              return <AppealTextMessage key={`msg-${log.id}`} message={log} />;
             }
           },
         )}
