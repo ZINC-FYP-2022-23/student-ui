@@ -151,23 +151,12 @@ function AssignmentSubmission({ submissionClosed, isOpen }) {
 
 interface AssignmentGradeButtonProps {
   assignmentId: number;
-  disabled: boolean; // Is the button disabled.
 }
 
 /**
  * Returns the button that directs to the Appeal Submission page.
  */
-function AppealGradeButton({ assignmentId, disabled }: AssignmentGradeButtonProps) {
-  if (disabled) {
-    return (
-      <button
-        disabled
-        className="px-3 py-1.5 mt-3 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-gray-400 bg-gray-100 cursor-not-allowed"
-      >
-        Appeal your grade
-      </button>
-    );
-  }
+function AppealGradeButton({ assignmentId }: AssignmentGradeButtonProps) {
   return (
     <Link href={`/assignments/${assignmentId}/appealSubmission`}>
       <a className="px-3 py-1.5 mt-3 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
@@ -197,7 +186,7 @@ interface GradePanelProps {
   score: number;
   maxScore: number;
   /** Number of appeals attempt that can be made left. */
-  appealAttemptLeft: number;
+  appealAttemptsLeft: number | null;
   /** The latest appeal attempt. */
   appealAttempt: AppealAttempt;
   /** Raw data of appeal configs. */
@@ -212,7 +201,7 @@ function GradePanel({
   assignmentId,
   score,
   maxScore,
-  appealAttemptLeft,
+  appealAttemptsLeft,
   appealAttempt,
   appealConfigData,
 }: GradePanelProps) {
@@ -236,14 +225,15 @@ function GradePanel({
   }
 
   // Check if new appeal can be submitted
-  let appealGradeButtonDisabled = false;
-  if (
-    appealAttemptLeft <= 0 ||
-    !appealConfigData.assignmentConfig.isAppealAllowed ||
-    (appealStartAt && now < appealStartAt) ||
-    (appealStopAt && now > appealStopAt)
-  )
-    appealGradeButtonDisabled = true;
+  const isAppealAllowed = appealConfigData.assignmentConfig.isAppealAllowed;
+  const canAppeal =
+    isAppealAllowed &&
+    (appealAttemptsLeft === null || appealAttemptsLeft > 0) &&
+    appealStartAt &&
+    now >= appealStartAt &&
+    appealStopAt &&
+    now <= appealStopAt &&
+    appealStatus !== AppealStatus.PENDING;
 
   // Handling color based on appeal status of the latest appeal
   let backgroundColor: string = "";
@@ -276,17 +266,24 @@ function GradePanel({
       <p className={gradeTextCss}>
         Your Grade: <span className="font-bold">{score}</span>/{maxScore}
       </p>
-      {appealConfigData.assignmentConfig.isAppealAllowed && appealId && appealStatus && (
+      {isAppealAllowed && appealStartAt && now >= appealStartAt && (
         <>
-          <AppealDetailsButton appealId={appealId} />
-          <AppealResult appealResult={appealStatus} />
-        </>
-      )}
-      {/* Only allow students to submit an appeal if not appealed before or latest appeal has been accepted or rejected */}
-      {appealConfigData.assignmentConfig.isAppealAllowed && appealStatus !== AppealStatus.PENDING && (
-        <>
-          <AppealGradeButton assignmentId={assignmentId} disabled={appealGradeButtonDisabled} />
-          <p className={attemptLeftTextCss}>Appeal Attempts Left: {appealAttemptLeft}</p>
+          {appealId && appealStatus && (
+            <>
+              <AppealDetailsButton appealId={appealId} />
+              <AppealResult appealResult={appealStatus} />
+            </>
+          )}
+          {/* Only allow students to submit an appeal if not appealed before or latest appeal has been accepted or rejected */}
+          {canAppeal && <AppealGradeButton assignmentId={assignmentId} />}
+          {appealStatus !== AppealStatus.PENDING && (
+            <p className={attemptLeftTextCss}>
+              {appealAttemptsLeft !== null
+                ? `Appeal Attempts Left: ${appealAttemptsLeft}`
+                : "Unlimited Appeal Attempts."}
+            </p>
+          )}
+          {appealStopAt && now > appealStopAt && <p className={attemptLeftTextCss}>Appeal deadline passed.</p>}
         </>
       )}
     </div>
@@ -500,7 +497,7 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
 
   // Get number of appeal attempt left
   const appealLimits = appealConfigData!.assignmentConfig!.appealLimits;
-  const appealAttemptLeft = Math.max(0, appealConfigData!.assignmentConfig!.appealLimits! - appealAttempts.length);
+  const appealAttemptsLeft = appealLimits !== null ? Math.max(0, appealLimits - appealAttempts.length) : null;
 
   // Get the original score
   const score = getScore(appealsDetailsData!.appeals, appealChangeLogData!.changeLogs, submissionData!.submissions);
@@ -575,7 +572,7 @@ export function AssignmentContent({ content }: AssignmentContentProps) {
                   assignmentId={content.id}
                   score={score}
                   maxScore={maxScore}
-                  appealAttemptLeft={appealAttemptLeft}
+                  appealAttemptsLeft={appealAttemptsLeft}
                   appealAttempt={appealAttempts[0]}
                   appealConfigData={appealConfigData}
                 />
