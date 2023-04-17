@@ -11,8 +11,8 @@ import {
   GET_APPEAL_DETAILS_BY_APPEAL_ID,
   GET_APPEAL_MESSAGES,
   GET_ASSIGNMENT_CONFIG_ID_BY_APPEAL_ID,
-  GET_SUBMISSIONS_BY_ASSIGNMENT_AND_USER_ID,
   GET_IDS_BY_APPEAL_ID,
+  GET_SUBMISSIONS_BY_ASSIGNMENT_AND_USER_ID,
 } from "@/graphql/queries/appealQueries";
 import { Layout } from "@/layout";
 import { AppealAttempt, AppealLog, AppealStatus, DisplayMessageType } from "@/types/appeal";
@@ -22,13 +22,13 @@ import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Tab } from "@headlessui/react";
 import { Alert, clsx, createStyles } from "@mantine/core";
+import axios from "axios";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
 import { initializeApollo } from "../../../lib/apollo";
-import axios from "axios";
 
 interface ButtonProps {
   comments: string; // The text message sent to the TA when submitting the appeal
@@ -389,36 +389,25 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
   }
 
   // Display error if it occurred
-  if (appealConfigError) {
-    const errorMessage = "Unable to Fetch appeal details with `GET_APPEAL_CONFIG`";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
-  } else if (appealDetailsError) {
-    const errorMessage = "Unable to Fetch appeal details with `GET_APPEAL_DETAILS_BY_APPEAL_ID`";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
-  } else if (appealChangeLogError) {
-    const errorMessage = "Unable to Fetch appeal details with `GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID`";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
-  } else if (appealMessagesError) {
-    const errorMessage = "Unable to Fetch appeal details with `GET_APPEAL_MESSAGES`";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+  let errorMessage: string | null = null;
+  if (appealConfigError || appealDetailsError || appealChangeLogData || appealMessagesError) {
+    errorMessage = "Failed to fetch appeal details.";
   } else if (!appealsDetailsData || !appealsDetailsData.appeal) {
     // Check if the appeal details is available, if not, there is no such appeal
-    const errorMessage = "Invalid appeal. Please check the appeal number.";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+    errorMessage = "Invalid appeal. Please check the appeal ID.";
   } else if (!appealConfigData!.assignmentConfig.isAppealAllowed) {
     // Check if the appeal submission is allowed
-    const errorMessage = "The assignment does not allow any appeals.";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
+    errorMessage = "The assignment does not allow any appeals.";
+  } else if (appealsDetailsData.appeal.userId !== userId) {
+    // Check if the student has access to the appeal
+    errorMessage = "Access Denied. You don't have permission to access this appeal.";
+  }
+  if (errorMessage) {
+    <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
   }
 
   // Translate `appealDetailsData` to `AppealAttempt[]`
   let appealAttempt: AppealAttempt[] = transformToAppealAttempt({ appealsDetailsData });
-
-  // Display Error if the student has no access to the appeal
-  if (appealsDetailsData.appeal.userId !== userId) {
-    const errorMessage = "Access Denied. You don't have permission to access this appeal.";
-    return <DisplayError assignmentId={assignmentId} errorMessage={errorMessage} />;
-  }
 
   // Merge the data and create a log list
   let activityLogList: (
