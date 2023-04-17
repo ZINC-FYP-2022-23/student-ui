@@ -200,7 +200,12 @@ export function AppealLogMessage({ log, showButton, showReason }: AppealLogMessa
         <div>
           {log.newFileSubmissionId && (
             <Link href={`/api/submissions/${log.newFileSubmissionId}`}>
-              <a className="self-start inline-flex items-center px-3 py-1.5 border border-r-0 border-gray-300 text-xs leading-4 font-medium rounded-l-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
+              <a
+                className={clsx(
+                  "self-start inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-l-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150",
+                  showButton ? "border-r-0" : "border-r-1 rounded-r-lg",
+                )}
+              >
                 Download submission
               </a>
             </Link>
@@ -209,8 +214,8 @@ export function AppealLogMessage({ log, showButton, showReason }: AppealLogMessa
             <Link href={`/appeals/${log.appealId}`}>
               <a
                 className={clsx(
-                  "self-start inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150",
-                  log.newFileSubmissionId ? "rounded-r-lg" : "rounded-lg",
+                  "self-start inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-r-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150",
+                  log.newFileSubmissionId ? "" : "rounded-lg",
                 )}
               >
                 View appeal
