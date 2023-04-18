@@ -1,3 +1,4 @@
+import { useLayoutDispatch } from "@/contexts/layout";
 import { AppealLog, ChangeLogTypes } from "@/types/appeal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { clsx } from "@mantine/core";
@@ -19,6 +20,8 @@ export function AppealLogMessage({ log, showButton, showReason }: AppealLogMessa
   const now = new Date();
   const logDate = new Date(log.date);
   logDate.setTime(logDate.getTime() + 8 * 60 * 60 * 1000);
+
+  const dispatch = useLayoutDispatch();
 
   /** The icon to show at the left. */
   let icon: React.ReactNode | null = null;
@@ -199,16 +202,29 @@ export function AppealLogMessage({ log, showButton, showReason }: AppealLogMessa
         </div>
         <div>
           {log.newFileSubmissionId && (
-            <Link href={`/api/submissions/${log.newFileSubmissionId}`}>
-              <a
-                className={clsx(
-                  "self-start inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-l-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150",
-                  showButton ? "border-r-0" : "border-r-1 rounded-r-lg",
-                )}
-              >
-                Download submission
-              </a>
-            </Link>
+            <>
+              <Link href={`/api/submissions/${log.newFileSubmissionId}`}>
+                <a
+                  className={clsx(
+                    "self-start inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-l-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150",
+                    showButton ? "border-r-0" : "border-r-1 rounded-r-lg",
+                  )}
+                >
+                  Download submission
+                </a>
+              </Link>
+              {/* TODO: isAppealAllowStudentViewReport */}
+              {/* <span className="inline-flex rounded-md shadow-sm">
+                <button
+                  // TODO: add report ID to payload
+                  onClick={() => dispatch({ type: "viewReport", payload: 0 })}
+                  type="button"
+                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150"
+                >
+                  View report
+                </button>
+              </span> */}
+            </>
           )}
           {showButton && (
             <Link href={`/appeals/${log.appealId}`}>
