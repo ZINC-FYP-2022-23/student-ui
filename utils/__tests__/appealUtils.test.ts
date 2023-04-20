@@ -1,5 +1,5 @@
 import { transformToAppealAttempt, mergeDataToActivityLogList } from "../appealUtils";
-import { AppealAttempt, AppealStatus } from "@/types/appeal";
+import { AppealAttempt, AppealStatus, ChangeLogTypes } from "@/types/appeal";
 
 describe("Grade Appeal: Utils", () => {
   describe("transformToAppealAttempt()", () => {
@@ -13,7 +13,7 @@ describe("Grade Appeal: Utils", () => {
       const appealsDetailsData = {
         appeal: {
           id: 1,
-          newFileSubmissionId: 2,
+          newFileSubmissionId: null,
           assignmentConfigId: 3,
           userId: 4,
           createdAt: "Tue Feb 05 2019 12:05:22",
@@ -27,12 +27,13 @@ describe("Grade Appeal: Utils", () => {
       expect(appealAttempts).toStrictEqual([
         {
           id: 1,
-          newFileSubmissionId: 2,
+          newFileSubmissionId: null,
           assignmentConfigId: 3,
           userId: 4,
           createdAt: "Tue Feb 05 2019 12:05:22",
-          latestStatus: AppealStatus.ACCEPTED,
+          status: AppealStatus.ACCEPTED,
           updatedAt: "Wed Feb 06 2019 17:00:02",
+          reportId: undefined,
         },
       ]);
     });
@@ -42,7 +43,7 @@ describe("Grade Appeal: Utils", () => {
         appeals: [
           {
             id: 1,
-            newFileSubmissionId: 2,
+            newFileSubmissionId: null,
             assignmentConfigId: 3,
             userId: 4,
             createdAt: "Tue Feb 05 2019 12:00:00",
@@ -66,12 +67,13 @@ describe("Grade Appeal: Utils", () => {
       expect(appealAttempts).toStrictEqual([
         {
           id: 1,
-          newFileSubmissionId: 2,
+          newFileSubmissionId: null,
           assignmentConfigId: 3,
           userId: 4,
           createdAt: "Tue Feb 05 2019 12:00:00",
           updatedAt: "Wed Feb 06 2019 13:00:00",
-          latestStatus: AppealStatus.PENDING,
+          status: AppealStatus.PENDING,
+          reportId: undefined,
         },
         {
           id: 5,
@@ -80,7 +82,8 @@ describe("Grade Appeal: Utils", () => {
           userId: 8,
           createdAt: "Thu Feb 07 2019 14:00:00",
           updatedAt: "Fri Feb 08 2019 15:00:00",
-          latestStatus: AppealStatus.REJECTED,
+          status: AppealStatus.REJECTED,
+          reportId: undefined,
         },
       ]);
     });
@@ -116,6 +119,7 @@ describe("Grade Appeal: Utils", () => {
           createdAt: "Tue Feb 05 2019 12:05:22",
           status: AppealStatus.ACCEPTED,
           updatedAt: "Wed Feb 06 2019 17:00:02",
+          reportId: undefined,
         },
       ];
 
@@ -136,6 +140,8 @@ describe("Grade Appeal: Utils", () => {
           date: "Tue Feb 05 2019 12:05:22",
           id: 1,
           type: "APPEAL_SUBMISSION",
+          newFileSubmissionId: 2,
+          reportId: undefined,
         },
       ];
 
@@ -156,19 +162,24 @@ describe("Grade Appeal: Utils", () => {
       ];
 
       const appealChangeLogData = {
-        // TODO: fix originalState and updatedState tests cases
         changeLogs: [
           {
             assignmentConfigId: 1,
             createdAt: "2023-03-26T13:03:29.497",
             id: 67,
             initiatedBy: 6,
-            originalState: "[{'status':PENDING}]",
+            originalState: {
+              type: "status",
+              status: AppealStatus.PENDING,
+            },
             reason: "<p>234</p>",
             reportId: null,
             submissionId: 1,
             type: "APPEAL_STATUS",
-            updatedState: "[{'status':ACCEPTED}]",
+            updatedState: {
+              type: "status",
+              status: AppealStatus.ACCEPTED,
+            },
             userId: 6,
           },
           {
@@ -176,12 +187,18 @@ describe("Grade Appeal: Utils", () => {
             createdAt: "2023-03-24T16:20:12.27",
             id: 66,
             initiatedBy: 6,
-            originalState: "[{'status':ACCEPTED}]",
+            originalState: {
+              type: "status",
+              status: AppealStatus.ACCEPTED,
+            },
             reason: "<p>5</p>",
             reportId: null,
             submissionId: 1,
             type: "APPEAL_STATUS",
-            updatedState: "[{'status':PENDING}]",
+            updatedState: {
+              type: "status",
+              status: AppealStatus.PENDING,
+            },
             userId: 6,
           },
         ],
@@ -199,26 +216,40 @@ describe("Grade Appeal: Utils", () => {
           appealId: undefined,
           date: "2023-03-26T13:03:29.497",
           id: 67,
-          originalState: "Pending",
+          originalState: {
+            type: "status",
+            status: AppealStatus.PENDING,
+          },
           reason: "<p>234</p>",
-          type: 0,
-          updatedState: "Accepted",
+          type: ChangeLogTypes.APPEAL_STATUS,
+          updatedState: {
+            type: "status",
+            status: AppealStatus.ACCEPTED,
+          },
         },
         {
           _type: "appealLog",
           appealId: undefined,
           date: "2023-03-24T16:20:12.27",
           id: 66,
-          originalState: "Accepted",
+          originalState: {
+            type: "status",
+            status: AppealStatus.ACCEPTED,
+          },
           reason: "<p>5</p>",
-          type: 0,
-          updatedState: "Pending",
+          type: ChangeLogTypes.APPEAL_STATUS,
+          updatedState: {
+            type: "status",
+            status: AppealStatus.PENDING,
+          },
         },
         {
           _type: "appealLog",
           appealId: 1,
           date: "Tue Feb 05 2019 12:05:22",
           id: 1,
+          newFileSubmissionId: 2,
+          reportId: undefined,
           type: "APPEAL_SUBMISSION",
         },
       ];
@@ -298,6 +329,8 @@ describe("Grade Appeal: Utils", () => {
           appealId: 1,
           date: "Tue Feb 05 2019 12:05:22",
           id: 1,
+          newFileSubmissionId: 2,
+          reportId: undefined,
           type: "APPEAL_SUBMISSION",
         },
       ];
@@ -325,12 +358,18 @@ describe("Grade Appeal: Utils", () => {
             createdAt: "2023-03-26T13:03:29.497",
             id: 67,
             initiatedBy: 6,
-            originalState: "[{'status':PENDING}]",
+            originalState: {
+              type: "status",
+              status: AppealStatus.PENDING,
+            },
             reason: "<p>234</p>",
             reportId: null,
             submissionId: 1,
-            type: "APPEAL_STATUS",
-            updatedState: "[{'status':ACCEPTED}]",
+            type: ChangeLogTypes.APPEAL_STATUS,
+            updatedState: {
+              type: "status",
+              status: AppealStatus.ACCEPTED,
+            },
             userId: 6,
           },
           {
@@ -338,12 +377,18 @@ describe("Grade Appeal: Utils", () => {
             createdAt: "2023-03-24T16:20:12.27",
             id: 66,
             initiatedBy: 6,
-            originalState: "[{'status':ACCEPTED}]",
+            originalState: {
+              type: "status",
+              status: AppealStatus.ACCEPTED,
+            },
             reason: "<p>5</p>",
             reportId: null,
             submissionId: 1,
-            type: "APPEAL_STATUS",
-            updatedState: "[{'status':PENDING}]",
+            type: ChangeLogTypes.APPEAL_STATUS,
+            updatedState: {
+              type: "status",
+              status: AppealStatus.PENDING,
+            },
             userId: 6,
           },
         ],
@@ -396,20 +441,32 @@ describe("Grade Appeal: Utils", () => {
           appealId: undefined,
           date: "2023-03-26T13:03:29.497",
           id: 67,
-          originalState: "Pending",
+          originalState: {
+            type: "status",
+            status: AppealStatus.PENDING,
+          },
           reason: "<p>234</p>",
-          type: 0,
-          updatedState: "Accepted",
+          type: ChangeLogTypes.APPEAL_STATUS,
+          updatedState: {
+            type: "status",
+            status: AppealStatus.ACCEPTED,
+          },
         },
         {
           _type: "appealLog",
           appealId: undefined,
           date: "2023-03-24T16:20:12.27",
           id: 66,
-          originalState: "Accepted",
+          originalState: {
+            type: "status",
+            status: AppealStatus.ACCEPTED,
+          },
           reason: "<p>5</p>",
-          type: 0,
-          updatedState: "Pending",
+          type: ChangeLogTypes.APPEAL_STATUS,
+          updatedState: {
+            type: "status",
+            status: AppealStatus.PENDING,
+          },
         },
         {
           _type: "appealMessage",
@@ -424,6 +481,8 @@ describe("Grade Appeal: Utils", () => {
           appealId: 1,
           date: "Tue Feb 05 2019 12:05:22",
           id: 1,
+          newFileSubmissionId: 2,
+          reportId: undefined,
           type: "APPEAL_SUBMISSION",
         },
       ];
@@ -488,6 +547,8 @@ describe("Grade Appeal: Utils", () => {
           appealId: 5,
           date: "Tue Feb 09 2019 12:05:22",
           id: 5,
+          newFileSubmissionId: 6,
+          reportId: undefined,
           type: "APPEAL_SUBMISSION",
         },
         {
@@ -495,6 +556,8 @@ describe("Grade Appeal: Utils", () => {
           appealId: 1,
           date: "Tue Feb 05 2019 12:05:22",
           id: 1,
+          newFileSubmissionId: 2,
+          reportId: undefined,
           type: "APPEAL_SUBMISSION",
         },
       ];
@@ -531,12 +594,18 @@ describe("Grade Appeal: Utils", () => {
             createdAt: "2023-03-26T13:03:29.497",
             id: 67,
             initiatedBy: 6,
-            originalState: "[{'status':PENDING}]",
+            originalState: {
+              type: "status",
+              status: AppealStatus.PENDING,
+            },
             reason: "<p>234</p>",
             reportId: null,
             submissionId: 1,
             type: "APPEAL_STATUS",
-            updatedState: "[{'status':ACCEPTED}]",
+            updatedState: {
+              type: "status",
+              status: AppealStatus.ACCEPTED,
+            },
             userId: 6,
           },
           {
@@ -544,12 +613,18 @@ describe("Grade Appeal: Utils", () => {
             createdAt: "2023-03-24T16:20:12.27",
             id: 66,
             initiatedBy: 6,
-            originalState: "[{'status':ACCEPTED}]",
+            originalState: {
+              type: "status",
+              status: AppealStatus.ACCEPTED,
+            },
             reason: "<p>5</p>",
             reportId: null,
             submissionId: 1,
             type: "APPEAL_STATUS",
-            updatedState: "[{'status':PENDING}]",
+            updatedState: {
+              type: "status",
+              status: AppealStatus.PENDING,
+            },
             userId: 6,
           },
         ],
@@ -567,26 +642,40 @@ describe("Grade Appeal: Utils", () => {
           _type: "appealLog",
           date: "2023-03-26T13:03:29.497",
           id: 67,
-          originalState: "Pending",
+          originalState: {
+            type: "status",
+            status: AppealStatus.PENDING,
+          },
           reason: "<p>234</p>",
-          type: 0,
-          updatedState: "Accepted",
+          type: ChangeLogTypes.APPEAL_STATUS,
+          updatedState: {
+            type: "status",
+            status: AppealStatus.ACCEPTED,
+          },
         },
         {
           _type: "appealLog",
           appealId: undefined,
           date: "2023-03-24T16:20:12.27",
           id: 66,
-          originalState: "Accepted",
+          originalState: {
+            type: "status",
+            status: AppealStatus.ACCEPTED,
+          },
           reason: "<p>5</p>",
-          type: 0,
-          updatedState: "Pending",
+          type: ChangeLogTypes.APPEAL_STATUS,
+          updatedState: {
+            type: "status",
+            status: AppealStatus.PENDING,
+          },
         },
         {
           _type: "appealLog",
           date: "Tue Feb 09 2019 12:05:22",
           appealId: 5,
           id: 5,
+          newFileSubmissionId: 6,
+          reportId: undefined,
           type: "APPEAL_SUBMISSION",
         },
         {
@@ -594,6 +683,8 @@ describe("Grade Appeal: Utils", () => {
           date: "Tue Feb 05 2019 12:05:22",
           appealId: 1,
           id: 1,
+          newFileSubmissionId: 2,
+          reportId: undefined,
           type: "APPEAL_SUBMISSION",
         },
       ];
@@ -656,6 +747,8 @@ describe("Grade Appeal: Utils", () => {
           date: "Tue Feb 09 2024 12:05:22",
           appealId: 5,
           id: 5,
+          newFileSubmissionId: 6,
+          reportId: undefined,
           type: "APPEAL_SUBMISSION",
         },
         {
@@ -663,6 +756,8 @@ describe("Grade Appeal: Utils", () => {
           date: "Tue Feb 05 2019 12:05:22",
           appealId: 1,
           id: 1,
+          newFileSubmissionId: 2,
+          reportId: undefined,
           type: "APPEAL_SUBMISSION",
         },
       ];
@@ -699,12 +794,18 @@ describe("Grade Appeal: Utils", () => {
             createdAt: "2023-03-26T13:03:29.497",
             id: 67,
             initiatedBy: 6,
-            originalState: "[{'status':PENDING}]",
+            originalState: {
+              type: "status",
+              status: AppealStatus.PENDING,
+            },
             reason: "<p>234</p>",
             reportId: null,
             submissionId: 1,
             type: "APPEAL_STATUS",
-            updatedState: "[{'status':ACCEPTED}]",
+            updatedState: {
+              type: "status",
+              status: AppealStatus.ACCEPTED,
+            },
             userId: 6,
           },
           {
@@ -712,12 +813,18 @@ describe("Grade Appeal: Utils", () => {
             createdAt: "2023-03-24T16:20:12.27",
             id: 66,
             initiatedBy: 6,
-            originalState: "[{'status':ACCEPTED}]",
+            originalState: {
+              type: "status",
+              status: AppealStatus.ACCEPTED,
+            },
             reason: "<p>5</p>",
             reportId: null,
             submissionId: 1,
             type: "APPEAL_STATUS",
-            updatedState: "[{'status':PENDING}]",
+            updatedState: {
+              type: "status",
+              status: AppealStatus.PENDING,
+            },
             userId: 6,
           },
         ],
@@ -752,6 +859,8 @@ describe("Grade Appeal: Utils", () => {
           appealId: 5,
           date: "Tue Feb 09 2024 12:05:22",
           id: 5,
+          newFileSubmissionId: 6,
+          reportId: undefined,
           type: "APPEAL_SUBMISSION",
         },
         {
@@ -759,26 +868,40 @@ describe("Grade Appeal: Utils", () => {
           appealId: undefined,
           date: "2023-03-26T13:03:29.497",
           id: 67,
-          originalState: "Pending",
+          originalState: {
+            type: "status",
+            status: AppealStatus.PENDING,
+          },
           reason: "<p>234</p>",
-          type: 0,
-          updatedState: "Accepted",
+          type: ChangeLogTypes.APPEAL_STATUS,
+          updatedState: {
+            type: "status",
+            status: AppealStatus.ACCEPTED,
+          },
         },
         {
           _type: "appealLog",
           appealId: undefined,
           date: "2023-03-24T16:20:12.27",
           id: 66,
-          originalState: "Accepted",
+          originalState: {
+            type: "status",
+            status: AppealStatus.ACCEPTED,
+          },
           reason: "<p>5</p>",
-          type: 0,
-          updatedState: "Pending",
+          type: ChangeLogTypes.APPEAL_STATUS,
+          updatedState: {
+            type: "status",
+            status: AppealStatus.PENDING,
+          },
         },
         {
           _type: "appealLog",
           date: "Tue Feb 05 2019 12:05:22",
           appealId: 1,
           id: 1,
+          newFileSubmissionId: 2,
+          reportId: undefined,
           type: "APPEAL_SUBMISSION",
         },
       ];
