@@ -15,7 +15,7 @@ import { getMaxScore, isInputEmpty } from "@/utils/appealUtils";
 import { getLocalDateFromString } from "@/utils/date";
 import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Alert } from "@mantine/core";
+import { Alert, clsx } from "@mantine/core";
 import axios from "axios";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
@@ -386,18 +386,21 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
           <AssignmentSection />
           <div className="p-5 flex flex-1 flex-col overflow-y-auto">
             {/* Back Button */}
-            <Link href={`/assignments/${assignmentId}`}>
-              <a className="max-w-max-content w-max px-3 py-1.5 mb-3 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
-                <FontAwesomeIcon icon={["far", "chevron-left"]} className="mr-2" />
-                Back
-              </a>
-            </Link>
+            <div className="mb-3 relative">
+              <Link href={`/assignments/${assignmentId}`}>
+                <a className="absolute left-0 max-w-max-content w-max px-3 py-1.5 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
+                  <FontAwesomeIcon icon={["far", "chevron-left"]} className="mr-2" />
+                  Back
+                </a>
+              </Link>
+              <h1 className="my-auto font-semibold text-2xl text-center">Submit Grade Appeal</h1>
+              <div />
+            </div>
             <>
               {/* Justification and Comments */}
-              <h1 className="mb-2 font-semibold text-2xl text-center">Submit Grade Appeal</h1>
               <div className="my-6">
                 <h2 className="mb-2 font-semibold text-lg">
-                  Justification and comments<span className="ml-0.5 text-red-600">*</span>
+                  Justification and comments<span className="text-sm ml-1 font-medium text-red-600">(required)</span>
                 </h2>
                 {/* @ts-ignore */}
                 <RichTextEditor
@@ -408,43 +411,44 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                     ["bold", "italic", "underline"],
                     ["h1", "h2", "h3", "unorderedList", "orderedList"],
                   ]}
+                  className="rounded-md"
                 />
                 {/* End of Justification and Comments */}
               </div>
               {/* Upload Code */}
               <div className="my-6">
-                <h2 className="mb-2 font-semibold text-lg">Upload fixed code</h2>
+                <h2 className="mb-2 font-semibold text-lg">Upload submission files for appeal</h2>
                 <p className="mb-4 text-sm text-gray-600">
-                  Do NOT upload specific fixed files. Upload as if you are submitting for the whole assignment. The
-                  system will find out the fixed codes automatically.
+                  You may resubmit the assignment so that teaching assistants can adjust your final score based on the
+                  grade of your resubmission.
                 </p>
                 <div className="bg-white p-4 rounded-md">
                   <div
                     {...getRootProps()}
-                    className={`mt-2 flex justify-center px-6 pt-5 pb-6 border-2 focus:outline-none w-full ${
-                      isDragActive ? "border-blue-400" : "border-gray-300"
-                    } border-dashed rounded-md`}
+                    className={clsx(
+                      "flex justify-center px-6 pt-5 pb-6 border-2 focus:outline-none w-full border-dashed rounded-md",
+                      isDragActive ? "border-blue-400" : "border-gray-300",
+                    )}
                   >
                     <div className="text-center">
                       <FontAwesomeIcon icon={["fad", "upload"]} size="2x" />
                       <p className="mt-1 text-sm text-gray-600">
                         <input {...getInputProps()} />
                         <button className="mr-1 font-medium text-cse-600 hover:text-cse-500 focus:outline-none focus:underline transition duration-150 ease-in-out">
-                          Upload a file
+                          Upload files
                         </button>
                         or drag and drop
                       </p>
-                      <p className="mt-1 text-xs text-gray-500">ZIP file up to 10MB</p>
+                      <p className="mt-1 text-xs text-gray-500">Each file up to 10MB</p>
                     </div>
                   </div>
                 </div>
                 {acceptedFiles.length !== 0 && (
                   <div className="mt-4">
-                    <h4 className="mb-2 font-semibold">Uploaded Files:</h4>
+                    <h4 className="mb-2 font-medium">Uploaded Files:</h4>
                     {acceptedFiles.map((file) => (
-                      // TODO: add download button for each file
                       <li key={file.name} className="ml-4">
-                        {file.name} - {file.size} bytes
+                        {file.name}
                       </li>
                     ))}
                   </div>
@@ -460,8 +464,8 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                   </p>
                 </div>
                 {isFullMark ? (
-                  <div className="flex flex-col items-center w-full py-3 bg-red-50 rounded-lg mt-4 mb-4">
-                    <div className="flex items-center mt-4 mb-4">
+                  <div className="flex flex-col items-center w-full py-5 bg-red-50 rounded-lg mt-4 mb-4">
+                    <div className="flex items-center mb-4">
                       <FontAwesomeIcon icon={["far", "octagon-exclamation"]} className="text-red-600 mr-2 text-lg" />
                       <p className="text-red-600 text-lg font-medium">
                         Your assignment got full marks. Are you sure to submit a grade appeal?
