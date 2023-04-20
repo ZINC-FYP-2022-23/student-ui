@@ -7,16 +7,23 @@ import Link from "next/link";
 interface AppealLogMessageType {
   /** Log to be displayed. */
   log: AppealLog;
-  /** Whether to show the "View appeal" button at the right. */
-  showButton: boolean;
   /** Whether to show the reason given by the TA for making that decision in the log. */
   showReason: boolean;
+  /** Whether to show the "Download submission" and "View report" buttons at the right. */
+  showSubmissionButtons: boolean;
+  /** Whether to show the "View appeal" button at the right. */
+  showViewAppealButton: boolean;
 }
 
 /**
  * Returns a component that shows a log message based on the log type
  */
-export function AppealLogMessage({ log, showButton, showReason }: AppealLogMessageType) {
+export function AppealLogMessage({
+  log,
+  showReason,
+  showSubmissionButtons,
+  showViewAppealButton,
+}: AppealLogMessageType) {
   const now = new Date();
   const logDate = new Date(log.date);
   logDate.setTime(logDate.getTime() + 8 * 60 * 60 * 1000);
@@ -201,39 +208,32 @@ export function AppealLogMessage({ log, showButton, showReason }: AppealLogMessa
           <div className="mt-1.5">{content}</div>
         </div>
         <div>
-          {log.newFileSubmissionId && (
-            <>
+          {showSubmissionButtons && log.newFileSubmissionId && (
+            <div className="self-start inline-flex items-center">
               <Link href={`/api/submissions/${log.newFileSubmissionId}`}>
                 <a
                   className={clsx(
                     "self-start inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-l-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150",
-                    showButton ? "border-r-0" : "border-r-1 rounded-r-lg",
+                    log.reportId ? "border-r-0" : "border-r-1 rounded-r-lg",
                   )}
                 >
                   Download submission
                 </a>
               </Link>
-              {/* TODO: isAppealAllowStudentViewReport */}
-              {/* <span className="inline-flex rounded-md shadow-sm">
+              {log.reportId ? (
                 <button
-                  // TODO: add report ID to payload
-                  onClick={() => dispatch({ type: "viewReport", payload: 0 })}
+                  onClick={() => dispatch({ type: "viewReport", payload: log.reportId })}
                   type="button"
-                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150"
+                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-r-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150"
                 >
                   View report
                 </button>
-              </span> */}
-            </>
+              ) : null}
+            </div>
           )}
-          {showButton && (
+          {showViewAppealButton && (
             <Link href={`/appeals/${log.appealId}`}>
-              <a
-                className={clsx(
-                  "self-start inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-r-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150",
-                  log.newFileSubmissionId ? "" : "rounded-lg",
-                )}
-              >
+              <a className="self-start inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
                 View appeal
               </a>
             </Link>

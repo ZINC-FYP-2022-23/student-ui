@@ -29,6 +29,8 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
 import { initializeApollo } from "../../../lib/apollo";
+import { ReportSlideOver } from "@/components/Report";
+import { SlideOver } from "@/components/SlideOver";
 
 interface ButtonProps {
   comments: string; // The text message sent to the TA when submitting the appeal
@@ -125,7 +127,7 @@ function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
           if (log._type === "appealLog") {
             return (
               <div key={`log-${log.id}`} className="px-3">
-                <AppealLogMessage log={log} showButton={false} showReason />
+                <AppealLogMessage log={log} showReason showSubmissionButtons showViewAppealButton={false} />
               </div>
             );
           } else if (log._type === "appealMessage") {
@@ -487,9 +489,13 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
                 </Tab.Panels>
               </Tab.Group>
             </div>
+            <div className="h-2 flex-shrink-0" />
           </div>
         </main>
       </Layout>
+      <SlideOver>
+        <ReportSlideOver />
+      </SlideOver>
     </LayoutProvider>
   );
 }

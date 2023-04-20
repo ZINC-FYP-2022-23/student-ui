@@ -61,6 +61,7 @@ export function transformToAppealAttempt({ appealsDetailsData }) {
       createdAt: appealsDetailsData.appeal.createdAt,
       status: latestStatus,
       updatedAt: appealsDetailsData.appeal.updatedAt,
+      reportId: appealsDetailsData.appeal?.submission?.reports?.find((r) => r.grade)?.id,
     });
   }
 
@@ -77,6 +78,7 @@ export function transformToAppealAttempt({ appealsDetailsData }) {
         createdAt: appeal.createdAt,
         status: latestStatus,
         updatedAt: appeal.updatedAt,
+        reportId: appealsDetailsData.appeal?.submission?.reports?.find((r) => r.grade)?.id,
       });
     });
   }
@@ -132,35 +134,7 @@ function sort({ submissions, messages, appealLog }: sortProps) {
   return allLog;
 }
 
-interface transformStateType {
-  type: ChangeLogTypes; // Type of the log
-  state: ChangeLogState;
-}
-
-/**
- * Transforms a JSON string
- * @returns {AppealStatus | string} - The new transformed state
- */
-function transformState({ type, state }: transformStateType) {
-  if (type === ChangeLogTypes.APPEAL_STATUS && state.type === "status") {
-    const status = state.status;
-    if (status === "ACCEPTED") {
-      return AppealStatus.ACCEPTED;
-    } else if (status === "REJECTED") {
-      return AppealStatus.REJECTED;
-    } else if (status === "PENDING") {
-      return AppealStatus.PENDING;
-    }
-  }
-
-  if (type === ChangeLogTypes.SCORE && state.type === "score") {
-    return state.score.toString();
-  }
-
-  return state;
-}
-
-interface transformToAppealLogProps {
+interface TransformToAppealLogOptions {
   appeals: AppealAttempt[]; // List of appeal attempts
   changeLog: ChangeLog[]; // List of change logs related to appeals
 }
@@ -169,7 +143,7 @@ interface transformToAppealLogProps {
  * Transforms and merges a list of `AppealAttempt` and `ChangeLog` into one list of `AppealLog`
  * @returns List of transformed and merged appeal logs, ordered from newest to oldest
  */
-function transformToAppealLog({ appeals, changeLog }: transformToAppealLogProps): AppealLog[] {
+function transformToAppealLog({ appeals, changeLog }: TransformToAppealLogOptions): AppealLog[] {
   let appealLog: AppealLog[] = [];
 
   appeals.forEach((appeal) => {
@@ -179,6 +153,7 @@ function transformToAppealLog({ appeals, changeLog }: transformToAppealLogProps)
       type: "APPEAL_SUBMISSION",
       date: appeal.createdAt,
       newFileSubmissionId: appeal.newFileSubmissionId,
+      reportId: appeal.reportId,
     });
   });
 

@@ -98,6 +98,12 @@ export const GET_APPEAL_DETAILS_BY_APPEAL_ID = gql`
         hasTeachingRole
         isAdmin
       }
+      submission {
+        reports(order_by: { createdAt: desc }, limit: 1) {
+          grade
+          id
+        }
+      }
     }
   }
 `;
