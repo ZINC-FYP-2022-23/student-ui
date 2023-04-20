@@ -46,7 +46,7 @@ function AppealMessageButton({ userId, comments, setComments }: ButtonProps) {
 
   return (
     <button
-      className="px-4 py-1 rounded-md text-lg bg-green-500 text-white hover:bg-green-600 active:bg-green-700 disabled:bg-gray-400 transition ease-in-out duration-150"
+      className="px-4 py-1 rounded-md bg-green-500 text-white hover:bg-green-600 active:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition ease-in-out duration-150"
       // Disable the Send Message Button if the text editor is empty
       disabled={isInputEmpty(comments)}
       onClick={async () => {
@@ -99,9 +99,9 @@ function AppealMessageButton({ userId, comments, setComments }: ButtonProps) {
 }
 
 interface ActivityLogTabProps {
-  userId: number;
-  isAppealStudentReplyAllowed: boolean; // Allow student to send further replies or not
-  /* A list of logs that may include appeal messages and appeal logs */
+  /** Allow student to send further replies or not. */
+  isAppealStudentReplyAllowed: boolean;
+  /** A list of logs that may include appeal messages and appeal logs */
   activityLogList: (
     | (SubmissionType & { _type: "submission" })
     | (DisplayMessageType & { _type: "appealMessage" })
@@ -112,50 +112,28 @@ interface ActivityLogTabProps {
 /**
  * Return a component that shows the Activity Log under the Activity Log Tab to show all appeal messages and appeal logs
  */
-function ActivityLogTab({ userId, activityLogList, isAppealStudentReplyAllowed }: ActivityLogTabProps) {
-  const [comments, setComments] = useState("");
-
+function ActivityLogTab({ activityLogList }: ActivityLogTabProps) {
   return (
     <div className="flex flex-col">
-      <>
-        {activityLogList.map(
-          (
-            log:
-              | (SubmissionType & { _type: "submission" })
-              | (DisplayMessageType & { _type: "appealMessage" })
-              | (AppealLog & { _type: "appealLog" }),
-          ) => {
-            if (log._type === "appealLog") {
-              return (
-                <div key={`log-${log.id}`} className="px-3">
-                  <AppealLogMessage log={log} showButton={false} showReason />
-                </div>
-              );
-            } else if (log._type === "appealMessage") {
-              return <AppealTextMessage key={`msg-${log.id}`} message={log} />;
-            }
-          },
-        )}
-        <div className="h-8 border-l-2"></div>
-      </>
-      {isAppealStudentReplyAllowed && (
-        <div className="mb-6 sticky bottom-0 object-bottom flex-row justify-between">
-          {/* @ts-ignore */}
-          <RichTextEditor
-            id="rte"
-            value={comments}
-            onChange={setComments}
-            controls={[
-              ["bold", "italic", "underline"],
-              ["h1", "h2", "h3", "unorderedList", "orderedList"],
-            ]}
-          />
-          <div className="py-1" />
-          <div className="flex justify-center">
-            <AppealMessageButton userId={userId} comments={comments} setComments={setComments} />
-          </div>
-        </div>
+      {activityLogList.map(
+        (
+          log:
+            | (SubmissionType & { _type: "submission" })
+            | (DisplayMessageType & { _type: "appealMessage" })
+            | (AppealLog & { _type: "appealLog" }),
+        ) => {
+          if (log._type === "appealLog") {
+            return (
+              <div key={`log-${log.id}`} className="px-3">
+                <AppealLogMessage log={log} showButton={false} showReason />
+              </div>
+            );
+          } else if (log._type === "appealMessage") {
+            return <AppealTextMessage key={`msg-${log.id}`} message={log} />;
+          }
+        },
       )}
+      <div className="h-8" />
     </div>
   );
 }
@@ -186,6 +164,9 @@ function CodeComparisonTab({ diffData }: CodeComparisonTabProps) {
         // Overrides the hidden file name in `index.css`
         display: "block !important",
       },
+      "& .d2h-file-list-wrapper": {
+        display: "none",
+      },
     },
   }));
 
@@ -193,12 +174,12 @@ function CodeComparisonTab({ diffData }: CodeComparisonTabProps) {
   const { diff, error, status } = diffData;
 
   if (status === -1) {
-    return <p className="mt-8 text-center text-gray-600">This appeal attempt does not include a file submission.</p>;
+    return <p className="py-8 text-center text-gray-600">This appeal attempt does not include a file submission.</p>;
   }
 
   if (status !== 200) {
     return (
-      <div className="mt-8 flex flex-col items-center space-y-5 text-red-500">
+      <div className="py-8 flex flex-col items-center space-y-5 text-red-500">
         <FontAwesomeIcon icon={["far", "circle-exclamation"]} size="3x" />
         <div className="space-y-2 text-center">
           <p>An error occurred while comparing old and new submissions.</p>
@@ -209,11 +190,11 @@ function CodeComparisonTab({ diffData }: CodeComparisonTabProps) {
   }
   if (diff === "") {
     return (
-      <p className="mt-8 text-center text-gray-600">The new appeal submission is the same as the old submission.</p>
+      <p className="py-8 text-center text-gray-600">The new appeal submission is the same as the old submission.</p>
     );
   }
   return (
-    <div className={clsx("relative", classes.diffView)}>
+    <div className={clsx("relative p-3", classes.diffView)}>
       <ReactGhLikeDiff
         options={{
           outputFormat: "side-by-side",
@@ -377,6 +358,8 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
     variables: { userId: userId, assignmentConfigId: assignmentId },
   });
 
+  const [comments, setComments] = useState("");
+
   // Display Loading if data fetching is still in-progress
   if (
     appealConfigLoading ||
@@ -430,11 +413,11 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
       <Layout title="Grade Appeal Details">
         <main className="flex-1 flex bg-gray-200 overflow-y-auto">
           <AssignmentSection />
-          <div className="p-5 flex flex-1 flex-col h-full w-max">
-            <div className="pb-3">
-              <div className="my-1 flex items-center">
+          <div className="mb-2 p-5 flex flex-1 flex-col w-max space-y-3">
+            <div>
+              <div className="my-1 relative">
                 <Link href={`/assignments/${assignmentId}`}>
-                  <a className="max-w-max-content w-max px-3 py-1.5 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
+                  <a className="absolute left-0 max-w-max-content w-max px-3 py-1.5 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
                     <FontAwesomeIcon icon={["far", "chevron-left"]} className="mr-2" />
                     Back
                   </a>
@@ -445,37 +428,54 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
                 <AppealResultBox appealResult={appealAttempt[0].status} />
               </div>
             </div>
-            <div className="p-2 flex-1 overflow-y-auto space-y-2">
+            {isAppealStudentReplyAllowed && (
+              <div className="p-3 flex-row justify-between bg-white rounded-md">
+                <RichTextEditor
+                  id="rte"
+                  value={comments}
+                  onChange={setComments}
+                  controls={[
+                    ["bold", "italic", "underline"],
+                    ["h1", "h2", "h3", "unorderedList", "orderedList"],
+                  ]}
+                />
+                <div className="mt-2 flex justify-end">
+                  <AppealMessageButton userId={userId} comments={comments} setComments={setComments} />
+                </div>
+              </div>
+            )}
+            <div className="flex-shrink-0 overflow-y-auto bg-gray-200">
               <Tab.Group>
-                <Tab.List className="mt-3 px-6 flex gap-6 text-sm border-b w-full">
+                <Tab.List className="flex bg-blue-100 text-sm">
                   <Tab
                     className={({ selected }) =>
-                      `pb-3 px-1 border-b-2 font-medium text-sm leading-5 focus:outline-none transition ${
+                      clsx(
+                        "py-3 px-5 border-b-2 font-semibold transition rounded-md rounded-b-none",
                         selected
-                          ? "border-cse-500 text-cse-600"
-                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                      }`
+                          ? "bg-blue-200 text-cse-600 border-cse-600"
+                          : "text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none",
+                      )
                     }
                   >
                     Activity Log
                   </Tab>
                   <Tab
                     className={({ selected }) =>
-                      `pb-3 px-1 border-b-2 font-medium text-sm leading-5 focus:outline-none transition ${
+                      clsx(
+                        "py-3 px-5 border-b-2 font-semibold transition rounded-md rounded-b-none",
                         selected
-                          ? "border-cse-500 text-cse-600"
-                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                      }`
+                          ? "bg-blue-200 text-cse-600 border-cse-600"
+                          : "text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none",
+                      )
                     }
                   >
                     Code Comparison
                   </Tab>
                 </Tab.List>
-                <Tab.Panels>
+                <Tab.Panels className="bg-gray-100 rounded-b-md">
                   {/* "Messaging" tab panel */}
                   <Tab.Panel>
                     <ActivityLogTab
-                      userId={userId}
                       activityLogList={activityLogList}
                       isAppealStudentReplyAllowed={isAppealStudentReplyAllowed}
                     />

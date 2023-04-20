@@ -194,7 +194,7 @@ export function AppealLogMessage({ log, showButton, showReason }: AppealLogMessa
 
   return (
     <>
-      <div className="mx-12 h-12 border-l-2" />
+      <div className="h-12" />
       <div className="mx-8 flex justify-between">
         <div className="flex">
           {icon}
