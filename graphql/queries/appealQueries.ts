@@ -47,13 +47,15 @@ export const GET_APPEAL_CHANGE_LOGS_BY_ASSIGNMENT_ID = gql`
       assignmentConfigId
       createdAt
       id
-      initiatedBy
       originalState
       reason
       reportId
       submissionId
       type
       updatedState
+      userByInitiatedBy {
+        name
+      }
       userId
     }
   }
@@ -115,13 +117,15 @@ export const GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID = gql`
       appealId
       createdAt
       id
-      initiatedBy
       originalState
       reason
       reportId
       submissionId
       type
       updatedState
+      userByInitiatedBy {
+        name
+      }
       userId
     }
   }

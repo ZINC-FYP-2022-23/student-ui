@@ -1,3 +1,4 @@
+import { ChangeLog } from "@/types/tables";
 import { transformToAppealAttempt, mergeDataToActivityLogList } from "../appealUtils";
 import { AppealAttempt, AppealStatus, ChangeLogTypes } from "@/types/appeal";
 
@@ -161,13 +162,15 @@ describe("Grade Appeal: Utils", () => {
         },
       ];
 
-      const appealChangeLogData = {
+      const appealChangeLogData: { changeLogs: ChangeLog[] } = {
         changeLogs: [
           {
             assignmentConfigId: 1,
             createdAt: "2023-03-26T13:03:29.497",
             id: 67,
-            initiatedBy: 6,
+            userByInitiatedBy: {
+              name: "TEACHER, Teacher",
+            },
             originalState: {
               type: "status",
               status: AppealStatus.PENDING,
@@ -186,7 +189,9 @@ describe("Grade Appeal: Utils", () => {
             assignmentConfigId: 1,
             createdAt: "2023-03-24T16:20:12.27",
             id: 66,
-            initiatedBy: 6,
+            userByInitiatedBy: {
+              name: "TEACHER, Teacher",
+            },
             originalState: {
               type: "status",
               status: AppealStatus.ACCEPTED,
@@ -357,7 +362,9 @@ describe("Grade Appeal: Utils", () => {
             assignmentConfigId: 1,
             createdAt: "2023-03-26T13:03:29.497",
             id: 67,
-            initiatedBy: 6,
+            userByInitiatedBy: {
+              name: "TEACHER, Teacher",
+            },
             originalState: {
               type: "status",
               status: AppealStatus.PENDING,
@@ -376,7 +383,9 @@ describe("Grade Appeal: Utils", () => {
             assignmentConfigId: 1,
             createdAt: "2023-03-24T16:20:12.27",
             id: 66,
-            initiatedBy: 6,
+            userByInitiatedBy: {
+              name: "TEACHER, Teacher",
+            },
             originalState: {
               type: "status",
               status: AppealStatus.ACCEPTED,
@@ -593,7 +602,9 @@ describe("Grade Appeal: Utils", () => {
             assignmentConfigId: 1,
             createdAt: "2023-03-26T13:03:29.497",
             id: 67,
-            initiatedBy: 6,
+            userByInitiatedBy: {
+              name: "TEACHER, Teacher",
+            },
             originalState: {
               type: "status",
               status: AppealStatus.PENDING,
@@ -612,7 +623,9 @@ describe("Grade Appeal: Utils", () => {
             assignmentConfigId: 1,
             createdAt: "2023-03-24T16:20:12.27",
             id: 66,
-            initiatedBy: 6,
+            userByInitiatedBy: {
+              name: "TEACHER, Teacher",
+            },
             originalState: {
               type: "status",
               status: AppealStatus.ACCEPTED,
@@ -793,7 +806,9 @@ describe("Grade Appeal: Utils", () => {
             assignmentConfigId: 1,
             createdAt: "2023-03-26T13:03:29.497",
             id: 67,
-            initiatedBy: 6,
+            userByInitiatedBy: {
+              name: "TEACHER, Teacher",
+            },
             originalState: {
               type: "status",
               status: AppealStatus.PENDING,
@@ -812,7 +827,9 @@ describe("Grade Appeal: Utils", () => {
             assignmentConfigId: 1,
             createdAt: "2023-03-24T16:20:12.27",
             id: 66,
-            initiatedBy: 6,
+            userByInitiatedBy: {
+              name: "TEACHER, Teacher",
+            },
             originalState: {
               type: "status",
               status: AppealStatus.ACCEPTED,

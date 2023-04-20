@@ -103,7 +103,6 @@ export type ChangeLog = {
   originalState: ChangeLogState;
   updatedState: ChangeLogState;
   /** User ID */
-  initiatedBy: number;
   reason: string;
   appealId: number | null;
   userId: number;
@@ -111,6 +110,7 @@ export type ChangeLog = {
   reportId: number | null;
   submissionId: number | null;
   user: User;
+  userByInitiatedBy: User;
 };
 export type Course = {
   assignments: Assignment[];

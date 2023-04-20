@@ -78,7 +78,7 @@ export function transformToAppealAttempt({ appealsDetailsData }) {
         createdAt: appeal.createdAt,
         status: latestStatus,
         updatedAt: appeal.updatedAt,
-        reportId: appealsDetailsData.appeal?.submission?.reports?.find((r) => r.grade)?.id,
+        reportId: appeal.submission?.reports?.find((r) => r.grade)?.id,
       });
     });
   }
@@ -215,13 +215,13 @@ export function mergeDataToActivityLogList({
       type: logType,
       originalState: log.originalState,
       updatedState: log.updatedState,
-      initiatedBy: log.initiatedBy,
       reason: log.reason,
       appealId: log.appealId,
       assignmentConfigId: log.assignmentConfigId,
       userId: log.userId,
       reportId: log.reportId,
       submissionId: log.submissionId,
+      userByInitiatedBy: log.userByInitiatedBy,
       user: log.user,
     });
   });
