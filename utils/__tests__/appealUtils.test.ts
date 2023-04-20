@@ -1,4 +1,3 @@
-import { ChangeLog } from "@/types/tables";
 import { transformToAppealAttempt, mergeDataToActivityLogList } from "../appealUtils";
 import { AppealAttempt, AppealStatus, ChangeLogTypes } from "@/types/appeal";
 
@@ -162,7 +161,7 @@ describe("Grade Appeal: Utils", () => {
         },
       ];
 
-      const appealChangeLogData: { changeLogs: ChangeLog[] } = {
+      const appealChangeLogData = {
         changeLogs: [
           {
             assignmentConfigId: 1,
