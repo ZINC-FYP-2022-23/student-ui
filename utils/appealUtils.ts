@@ -167,6 +167,7 @@ function transformToAppealLog({ appeals, changeLog }: TransformToAppealLogOption
       originalState: log.originalState,
       updatedState: log.updatedState,
       reason: log.reason,
+      userByInitiatedBy: log.userByInitiatedBy,
     });
   });
 

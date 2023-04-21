@@ -42,6 +42,7 @@ export type AppealLog = {
   reason?: string;
   newFileSubmissionId?: number;
   reportId?: number;
+  userByInitiatedBy?;
 };
 
 export type DisplayMessageType = {

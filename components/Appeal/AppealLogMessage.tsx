@@ -68,16 +68,17 @@ export function AppealLogMessage({
     );
     content = (
       <p className="ml-2 text-sm text-gray-600">
-        The appeal has been{" "}
+        {/* TODO(Owen): add TA name to log message */}
+        TA {log.userByInitiatedBy.name} has{" "}
         <span className="font-medium text-sm">
           {(() => {
             switch (log.updatedState.status) {
               case "ACCEPTED":
-                return <span className="text-green-600">accepted</span>;
+                return <span className="text-green-600">accepted your appeal</span>;
               case "REJECTED":
-                return <span className="text-red-600">rejected</span>;
+                return <span className="text-red-600">rejected your appeal</span>;
               case "PENDING":
-                return <span className="text-yellow-600">pending for review</span>;
+                return <span className="text-yellow-600">set your appeal to be pending</span>;
             }
           })()}
         </span>{" "}
@@ -115,7 +116,8 @@ export function AppealLogMessage({
     );
     content = (
       <p className="ml-2 text-sm text-gray-600">
-        The score has been updated
+        {/* TODO(Owen): add TA name to log message */}
+        TA {log.userByInitiatedBy.name} has updated your score
         {log.originalState && (
           <>
             {" from "}
@@ -162,7 +164,8 @@ export function AppealLogMessage({
     );
     content = (
       <p className="ml-2 text-sm text-gray-600">
-        The submission has been changed on
+        {/* TODO(Owen): add TA name to log message */}
+        TA {log.userByInitiatedBy.name} has changed your submission on
         <span className="ml-1">
           {`${logDate.toLocaleDateString("en-HK", {
             month: "short",
