@@ -68,21 +68,20 @@ export function AppealLogMessage({
     );
     content = (
       <p className="ml-2 text-sm text-gray-600">
-        {/* TODO(Owen): add TA name to log message */}
-        TA {log.userByInitiatedBy.name} has{" "}
+        The appeal has been{" "}
         <span className="font-medium text-sm">
           {(() => {
             switch (log.updatedState.status) {
               case "ACCEPTED":
-                return <span className="text-green-600">accepted your appeal</span>;
+                return <span className="text-green-600 font-medium">accepted</span>;
               case "REJECTED":
-                return <span className="text-red-600">rejected your appeal</span>;
+                return <span className="text-red-600 font-medium">rejected</span>;
               case "PENDING":
-                return <span className="text-yellow-600">set your appeal to be pending</span>;
+                return <span className="text-yellow-600 font-medium">pending for review</span>;
             }
           })()}
         </span>{" "}
-        on
+        by {log.userByInitiatedBy.name} on
         <span className="ml-1">
           {`${logDate.toLocaleDateString("en-HK", {
             month: "short",
@@ -116,8 +115,7 @@ export function AppealLogMessage({
     );
     content = (
       <p className="ml-2 text-sm text-gray-600">
-        {/* TODO(Owen): add TA name to log message */}
-        TA {log.userByInitiatedBy.name} has updated your score
+        The score has been updated
         {log.originalState && (
           <>
             {" from "}
@@ -129,8 +127,8 @@ export function AppealLogMessage({
             {" to "}
             <span className="font-medium text-yellow-700">{log.updatedState.score}</span>
           </>
-        )}
-        {" on"}
+        )}{" "}
+        by {log.userByInitiatedBy.name} on
         <span className="ml-1">
           {`${logDate.toLocaleDateString("en-HK", {
             month: "short",
@@ -164,8 +162,7 @@ export function AppealLogMessage({
     );
     content = (
       <p className="ml-2 text-sm text-gray-600">
-        {/* TODO(Owen): add TA name to log message */}
-        TA {log.userByInitiatedBy.name} has changed your submission on
+        The submission has been changed on
         <span className="ml-1">
           {`${logDate.toLocaleDateString("en-HK", {
             month: "short",
@@ -184,6 +181,18 @@ export function AppealLogMessage({
             {" to "}
             <span className="font-medium text-yellow-700">{log.updatedState.submission}</span>
           </>
+        )}
+        by {log.userByInitiatedBy.name} on
+        <span className="ml-1">
+          {`${logDate.toLocaleDateString("en-HK", {
+            month: "short",
+            day: "numeric",
+            ...(logDate.getFullYear() !== now.getFullYear() && { year: "numeric" }),
+          })} at ${logDate.toLocaleTimeString().toLowerCase()}`}
+        </span>
+        {showReason && " with the following message:"}
+        {showReason && log.reason && (
+          <div className="appeal-msg mt-1 text-xs text-gray-500" dangerouslySetInnerHTML={{ __html: log.reason }} />
         )}
       </p>
     );
