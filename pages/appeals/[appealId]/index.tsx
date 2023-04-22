@@ -440,8 +440,9 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
                   onChange={setComments}
                   controls={[
                     ["bold", "italic", "underline"],
-                    ["h1", "h2", "h3", "unorderedList", "orderedList"],
+                    ["h1", "h2", "h3", "unorderedList", "orderedList", "codeBlock"],
                   ]}
+                  styles={{ toolbar: { position: "relative" } }}
                 />
                 <div className="mt-2 flex justify-end">
                   <AppealMessageButton userId={userId} comments={comments} setComments={setComments} />

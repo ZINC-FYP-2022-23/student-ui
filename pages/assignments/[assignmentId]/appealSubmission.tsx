@@ -412,6 +412,7 @@ function AppealSubmission({ userId, assignmentId }: AppealSubmissionProps) {
                     ["h1", "h2", "h3", "unorderedList", "orderedList"],
                   ]}
                   className="rounded-md"
+                  styles={{ toolbar: { position: "relative" } }}
                 />
                 {/* End of Justification and Comments */}
               </div>
