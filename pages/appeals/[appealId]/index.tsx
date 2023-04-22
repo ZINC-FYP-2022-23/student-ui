@@ -1,5 +1,6 @@
 import { AppealLogMessage } from "@/components/Appeal/AppealLogMessage";
-import { AppealResult } from "@/components/Appeal/AppealResult";
+import AppealResult from "@/components/Appeal/AppealResult";
+import AppealSendMessageButton from "@/components/Appeal/AppealSendMessageButton";
 import { AppealTextMessage } from "@/components/Appeal/AppealTextMessage";
 import { AssignmentSection } from "@/components/Assignment/List";
 import { Modal } from "@/components/Modal";
@@ -7,7 +8,7 @@ import { ReportSlideOver } from "@/components/Report";
 import RichTextEditor from "@/components/RichTextEditor";
 import { SlideOver } from "@/components/SlideOver";
 import { Spinner } from "@/components/Spinner";
-import { LayoutProvider, useLayoutDispatch } from "@/contexts/layout";
+import { LayoutProvider } from "@/contexts/layout";
 import {
   GET_APPEALS_BY_USER_ID_AND_ASSIGNMENT_ID,
   GET_APPEAL_CHANGE_LOGS_BY_APPEAL_ID,
@@ -21,87 +22,17 @@ import {
 import { Layout } from "@/layout";
 import { AppealAttempt, AppealLog, AppealStatus, DisplayMessageType } from "@/types/appeal";
 import { Appeal, AppealMessage, AssignmentConfig, ChangeLog, Submission as SubmissionType } from "@/types/tables";
-import { isInputEmpty, mergeDataToActivityLogList, transformToAppealAttempt } from "@/utils/appealUtils";
+import { mergeDataToActivityLogList, transformToAppealAttempt } from "@/utils/appealUtils";
 import { useQuery, useSubscription } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Tab } from "@headlessui/react";
 import { Alert, clsx, createStyles } from "@mantine/core";
-import axios from "axios";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import { ModalContent } from "pages/assignments/[assignmentId]";
 import { useState } from "react";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
 import { initializeApollo } from "../../../lib/apollo";
-
-interface ButtonProps {
-  comments: string; // The text message sent to the TA when submitting the appeal
-  setComments: (x: string) => void;
-  userId: number;
-}
-
-/**
- * Returns a appeal submission button
- */
-function AppealMessageButton({ userId, comments, setComments }: ButtonProps) {
-  const dispatch = useLayoutDispatch();
-  const router = useRouter();
-  const { appealId } = router.query;
-
-  return (
-    <button
-      className="px-4 py-1 rounded-md bg-green-500 text-white hover:bg-green-600 active:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition ease-in-out duration-150"
-      // Disable the Send Message Button if the text editor is empty
-      disabled={isInputEmpty(comments)}
-      onClick={async () => {
-        // Check if the text message blank. The student should filled in something for the appeal.
-        if (isInputEmpty(comments)) {
-          alert("Cannot submit empty message");
-        } else {
-          try {
-            await axios({
-              method: "POST",
-              url: `/api/appeals/messages`,
-              data: {
-                message: comments,
-                senderId: userId,
-                appealId,
-              },
-            });
-
-            setComments("");
-            return;
-          } catch (error: any) {
-            const { status: statusCode, data: responseJson } = error.response;
-            if (statusCode === 403) {
-              // 403 Forbidden
-              dispatch({
-                type: "showNotification",
-                payload: {
-                  title: "Appeal message denied",
-                  message: responseJson.error,
-                  success: false,
-                },
-              });
-              return;
-            }
-            dispatch({
-              type: "showNotification",
-              payload: {
-                title: "Unable to send appeal message",
-                message: "Failed to send appeal message due to network/server issues. Please submit again.\n" + error,
-                success: false,
-              },
-            });
-          }
-        }
-      }}
-    >
-      Send Message
-    </button>
-  );
-}
 
 interface ActivityLogTabProps {
   /** Allow student to send further replies or not. */
@@ -209,38 +140,6 @@ function CodeComparisonTab({ diffData }: CodeComparisonTabProps) {
       />
     </div>
   );
-}
-
-interface AppealResultBoxProps {
-  appealResult: AppealStatus; // The latest appeal status
-}
-
-/**
- * Returns the component that shows the latest appeal status at the top of the page
- */
-function AppealResultBox({ appealResult }: AppealResultBoxProps) {
-  switch (appealResult) {
-    case AppealStatus.ACCEPTED:
-      return (
-        <div className="bg-green-50 py-3 rounded-md">
-          <AppealResult appealResult={appealResult} />
-        </div>
-      );
-    case AppealStatus.REJECTED:
-      return (
-        <div className="bg-red-50 py-3 rounded-md">
-          <AppealResult appealResult={appealResult} />
-        </div>
-      );
-    case AppealStatus.PENDING:
-      return (
-        <div className="bg-yellow-50 py-3 rounded-md">
-          <AppealResult appealResult={appealResult} />
-        </div>
-      );
-    default:
-      return <></>;
-  }
 }
 
 interface DisplayErrorProps {
@@ -415,7 +314,7 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
                 <h1 className="flex-1 font-semibold text-2xl text-center">Grade Appeal</h1>
               </div>
               <div className="w-full mt-3">
-                <AppealResultBox appealResult={appealAttempt[0].status} />
+                <AppealResult appealResult={appealAttempt[0].status} hasPadding />
               </div>
             </div>
             {isAppealStudentReplyAllowed && (
@@ -431,7 +330,7 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
                   styles={{ toolbar: { position: "relative" } }}
                 />
                 <div className="mt-2 flex justify-end">
-                  <AppealMessageButton userId={userId} comments={comments} setComments={setComments} />
+                  <AppealSendMessageButton userId={userId} message={comments} onSuccess={() => setComments("")} />
                 </div>
               </div>
             )}

@@ -1,52 +1,51 @@
+import { AppealStatus } from "@/types/appeal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { AppealStatus } from "../../types/appeal";
+
+interface AppealResultProps {
+  /** The latest appeal status. */
+  appealResult: AppealStatus;
+  /** Whether to add padding around the status. Defaults to false. */
+  hasPadding?: boolean;
+}
+
+const paddingBgColor: Record<AppealStatus, string> = {
+  [AppealStatus.ACCEPTED]: "bg-green-50",
+  [AppealStatus.REJECTED]: "bg-red-50",
+  [AppealStatus.PENDING]: "bg-yellow-50",
+};
 
 /**
- * Returns a component of a box that shows the latest appeal status
- * @param appealResult - The latest appeal status
+ * Returns a component of a box that shows the latest appeal status.
  */
-export function AppealResult({ appealResult }: { appealResult: AppealStatus }) {
+function AppealResult({ appealResult, hasPadding = false }: AppealResultProps) {
+  let icon: React.ReactNode | null = null;
+  let label: React.ReactNode | null = null;
+
   switch (appealResult) {
-    case AppealStatus.ACCEPTED: {
-      return (
-        <div className="flex flex-col items-center rounded-lg">
-          <div className="flex items-center">
-            <FontAwesomeIcon icon={["far", "check"]} className="text-green-600 mr-2 text-lg" />
-            <p className="text-green-600 text-lg font-medium">Appeal Accepted</p>
-          </div>
-        </div>
-      );
+    case AppealStatus.ACCEPTED:
+      icon = <FontAwesomeIcon icon={["far", "check"]} className="text-green-600" />;
+      label = <span className="text-green-600">Appeal Accepted</span>;
       break;
-    }
-    case AppealStatus.REJECTED: {
-      return (
-        <div className="flex flex-col items-center rounded-lg">
-          <div className="flex items-center">
-            <FontAwesomeIcon icon={["far", "xmark"]} className="text-red-600 mr-2 text-lg" />
-            <p className="text-red-600 text-lg font-medium">Appeal Rejected</p>
-          </div>
-        </div>
-      );
+
+    case AppealStatus.REJECTED:
+      icon = <FontAwesomeIcon icon={["far", "xmark"]} className="text-red-600" />;
+      label = <span className="text-red-600">Appeal Rejected</span>;
       break;
-    }
-    case AppealStatus.PENDING: {
-      return (
-        <div className="flex flex-col items-center rounded-lg">
-          <div className="flex items-center">
-            <FontAwesomeIcon icon={["far", "clock"]} className="text-yellow-600 mr-2 text-lg" />
-            <p className="text-yellow-600 text-lg font-medium">Pending Appeal...</p>
-          </div>
-        </div>
-      );
+
+    case AppealStatus.PENDING:
+      icon = <FontAwesomeIcon icon={["far", "clock"]} className="text-yellow-600" />;
+      label = <span className="text-yellow-600">Pending Appeal...</span>;
       break;
-    }
-    default: {
-      return (
-        <div>
-          <p className="text-lg">Error: AppealStatus Undefined</p>
-        </div>
-      );
-      break;
-    }
   }
+
+  const result = (
+    <div className="flex items-center justify-center gap-2 text-lg">
+      {icon}
+      {label && <p className="text-lg font-medium">{label}</p>}
+    </div>
+  );
+
+  return hasPadding ? <div className={`py-3 rounded-md ${paddingBgColor[appealResult]}`}>{result}</div> : result;
 }
+
+export default AppealResult;

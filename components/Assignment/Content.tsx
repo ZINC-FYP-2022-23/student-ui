@@ -17,7 +17,7 @@ import { useLayoutDispatch } from "../../contexts/layout";
 import { useZinc } from "../../contexts/zinc";
 import { SUBMISSION_SUBSCRIPTION } from "../../graphql/queries/user";
 import { AppealLogMessage } from "../Appeal/AppealLogMessage";
-import { AppealResult } from "../Appeal/AppealResult";
+import AppealResult from "../Appeal/AppealResult";
 import { Submission } from "../Submission";
 import { SubmissionCollectionStatus } from "../SubmissionCollectionStatus";
 import { SubmissionLoader } from "../SubmissionLoader";
