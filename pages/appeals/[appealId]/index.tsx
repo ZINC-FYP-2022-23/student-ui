@@ -2,7 +2,11 @@ import { AppealLogMessage } from "@/components/Appeal/AppealLogMessage";
 import { AppealResult } from "@/components/Appeal/AppealResult";
 import { AppealTextMessage } from "@/components/Appeal/AppealTextMessage";
 import { AssignmentSection } from "@/components/Assignment/List";
+import { Modal } from "@/components/Modal";
+import { ReportSlideOver } from "@/components/Report";
 import RichTextEditor from "@/components/RichTextEditor";
+import { SlideOver } from "@/components/SlideOver";
+import { Spinner } from "@/components/Spinner";
 import { LayoutProvider, useLayoutDispatch } from "@/contexts/layout";
 import {
   GET_APPEALS_BY_USER_ID_AND_ASSIGNMENT_ID,
@@ -26,13 +30,10 @@ import axios from "axios";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { ModalContent } from "pages/assignments/[assignmentId]";
 import { useState } from "react";
 import { ReactGhLikeDiff } from "react-gh-like-diff";
 import { initializeApollo } from "../../../lib/apollo";
-import { ReportSlideOver } from "@/components/Report";
-import { SlideOver } from "@/components/SlideOver";
-import { Modal } from "@/components/Modal";
-import { ModalContent } from "pages/assignments/[assignmentId]";
 
 interface ButtonProps {
   comments: string; // The text message sent to the TA when submitting the appeal
@@ -285,32 +286,17 @@ function DisplayError({ assignmentId, errorMessage }: DisplayErrorProps) {
   );
 }
 
-interface DisplayLoadingProps {
-  assignmentId: number;
-}
-
 /**
  * Returns a loading page to show fetching data is in progress
  */
-function DisplayLoading({ assignmentId }: DisplayLoadingProps) {
+function DisplayLoading() {
   return (
     <LayoutProvider>
       <Layout title="Grade Appeal Details">
         <main className="flex-1 flex bg-gray-200 overflow-y-auto">
           <AssignmentSection />
-          <div className="p-5 flex flex-1 flex-col h-full w-max">
-            <div className="pb-3">
-              <div className="my-1 flex items-center">
-                <Link href={`/assignments/${assignmentId}`}>
-                  <a className="max-w-max-content w-max px-3 py-1.5 border border-gray-300 text-sm leading-4 font-medium rounded-lg text-blue-700 bg-white hover:text-blue-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-gray-50 transition ease-in-out duration-150">
-                    <FontAwesomeIcon icon={["far", "chevron-left"]} className="mr-2" />
-                    Back
-                  </a>
-                </Link>
-                <h1 className="flex-1 font-semibold text-2xl text-center">Grade Appeal</h1>
-              </div>
-              <div>Loading Data...</div>
-            </div>
+          <div className="w-full my-20 flex justify-center">
+            <Spinner className="h-16 w-16 text-cse-500" />
           </div>
         </main>
       </Layout>
@@ -372,7 +358,7 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
     appealMessagesLoading ||
     appealsLoading
   ) {
-    return <DisplayLoading assignmentId={assignmentId} />;
+    return <DisplayLoading />;
   }
 
   // Display error if it occurred
