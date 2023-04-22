@@ -12,7 +12,7 @@ import { Layout } from "@/layout";
 import { initializeApollo } from "@/lib/apollo";
 import { AssignmentConfig } from "@/types";
 
-function ModalContent() {
+export function ModalContent() {
   const { modalType } = useLayoutState();
   switch (modalType) {
     case "stdiotest":

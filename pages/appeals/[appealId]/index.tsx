@@ -31,6 +31,8 @@ import { ReactGhLikeDiff } from "react-gh-like-diff";
 import { initializeApollo } from "../../../lib/apollo";
 import { ReportSlideOver } from "@/components/Report";
 import { SlideOver } from "@/components/SlideOver";
+import { Modal } from "@/components/Modal";
+import { ModalContent } from "pages/assignments/[assignmentId]";
 
 interface ButtonProps {
   comments: string; // The text message sent to the TA when submitting the appeal
@@ -496,6 +498,9 @@ function AppealDetails({ appealId, userId, assignmentId, diffSubmissionsData }: 
       <SlideOver>
         <ReportSlideOver />
       </SlideOver>
+      <Modal>
+        <ModalContent />
+      </Modal>
     </LayoutProvider>
   );
 }
