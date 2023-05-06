@@ -4,6 +4,7 @@ import AdmZip from "adm-zip";
 import { parse } from "cookie";
 import axios from "axios";
 import sha256File from "sha256-file";
+import { NextApiRequest, NextApiResponse } from "next";
 
 interface Submission {
   stored_name: string;
@@ -14,6 +15,16 @@ interface Submission {
   remarks?: string[];
   size: number;
   assignment_config_id: number;
+  user_id: number;
+}
+
+/** Success payload returned by the `addSubmissionEntry` GraphQL mutation. */
+interface CreateSubmission {
+  id: number;
+  assignment_config_id: number;
+  created_at: string;
+  stored_name: string;
+  upload_name: string;
   user_id: number;
 }
 
@@ -31,16 +42,21 @@ async function submit(cookie: string, submission: Submission) {
       data: {
         query: `
           mutation addSubmissionEntry($submission: submissions_insert_input!) {
-            createSubmission(
-              object: $submission
-            ){ id }
+            createSubmission(object: $submission) {
+              id
+              assignment_config_id
+              created_at
+              stored_name
+              upload_name
+              user_id
+            }
           }
         `,
         variables: { submission },
       },
     });
     if (!errors) {
-      return data.createSubmission;
+      return data.createSubmission as CreateSubmission;
     } else {
       throw new Error(errors[0].message);
     }
@@ -49,8 +65,38 @@ async function submit(cookie: string, submission: Submission) {
   }
 }
 
-export default async function (req, res) {
+/**
+ * Decompresses and pushes a grading job in Redis.
+ *
+ * @param submission Data of the new submission.
+ */
+async function decompress(submission: CreateSubmission) {
   try {
+    const { data } = await axios({
+      method: "post",
+      url: `http://${process.env.WEBHOOK_ADDR}/decompression`,
+      data: {
+        submission,
+      },
+    });
+    if (data.error) {
+      throw new Error(data.error);
+    }
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    if (!req.headers.cookie) {
+      res.status(400).json({
+        status: "error",
+        error: "No cookie is found in the request headers",
+      });
+      return;
+    }
     const { user } = parse(req.headers.cookie);
     const form = new formidable.IncomingForm({
       multiples: true,
@@ -84,7 +130,8 @@ export default async function (req, res) {
               checksum: sha256File(savedPath),
               user_id: parseInt(user, 10),
             };
-            await submit(req.headers.cookie, submission);
+            const createSubmission = await submit(req.headers.cookie!, submission);
+            await decompress(createSubmission);
             res.json({
               status: "success",
             });
@@ -110,7 +157,7 @@ export default async function (req, res) {
             try {
               copyFile(files.path, `${process.env.NEXT_PUBLIC_UPLOAD_DIR}/${destinationFilename}`, async (err) => {
                 if (!err) {
-                  const { id } = await submit(req.headers.cookie, submission);
+                  const { id } = await submit(req.headers.cookie!, submission);
                   return res.json({
                     status: "success",
                     id,
@@ -153,3 +200,5 @@ export const config = {
     bodyParser: false,
   },
 };
+
+export default handler;
